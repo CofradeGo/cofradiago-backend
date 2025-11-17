@@ -3,7 +3,7 @@ import type { HealthStatus } from "../models/HealthStatus.ts";
 export const healthService = {
   getStatus(): HealthStatus {
     return {
-      status: "ok",
+      status: "200 - OK",
       timestamp: new Date().toISOString(),
     };
   },

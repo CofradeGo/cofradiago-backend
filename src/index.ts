@@ -1,9 +1,13 @@
 import "dotenv/config";
 import express, { type Application } from "express";
 import { healthRouter } from "./routes/health.ts";
+import cors from "cors";
 
 const app: Application = express();
 app.use(express.json());
+
+//Para permitir conexión con front
+app.use(cors({ origin: "http://localhost:5173" }));
 
 // Registrar rutas
 app.use("/health", healthRouter);
