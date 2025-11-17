@@ -1,0 +1,24 @@
+name: Enforce correct PR source branch
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  enforce-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR source branch
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const head = context.payload.pull_request.head.ref;
+
+            // Solo se permite 'develop'
+            if (head !== 'develop') {
+              core.setFailed(
+                `❌ Solo se permiten PRs hacia 'main' desde 'develop'. (Intentaste desde: ${head})`
+              );
+            } else {
+              core.info("✔ PR desde 'develop': Validación OK");
+            }
