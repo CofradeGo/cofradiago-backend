@@ -1,14 +1,17 @@
-import express from "express";
+import express, { type Application } from "express";
+import { healthRouter } from "./routes/health.ts";
 
-export const app = express();
-const PORT = process.env.PORT || 3000;
+const app: Application = express();
+app.use(express.json());
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
+// Registrar rutas
+app.use("/health", healthRouter);
 
-// Solo levantar el servidor si no estamos en test
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 }
+
+export { app };
