@@ -12,3 +12,11 @@ describe("GET /health", () => {
     expect(typeof res.body.timestamp).toBe("string");
   });
 });
+
+describe("Variables de entorno", () => {
+  it("deberían estar definidas", () => {
+    expect(process.env.PORT).toBeDefined();
+    expect(process.env.DB_URL).toBeDefined();
+    expect(process.env.JWT_SECRET).toBeDefined();
+  });
+});
