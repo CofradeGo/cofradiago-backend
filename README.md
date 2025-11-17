@@ -10,3 +10,18 @@ Clonar el repositorio y instalar dependencias:
 git clone <URL_REPO>
 cd cofradiago-backend
 npm install
+```
+## Levantar el servidor
+
+Para levantar el servidor usamos el script
+
+```bash
+npm run dev
+```
+## Ejecutar test
+
+Para ejecutar los tests usamos el script
+
+```bash
+npm test
+```
