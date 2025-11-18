@@ -7,7 +7,7 @@ describe("GET /health", () => {
 
     expect(res.status).toBe(200);
 
-    expect(res.body).toHaveProperty("status", "ok");
+    expect(res.body).toHaveProperty("status", "200 - OK");
     expect(res.body).toHaveProperty("timestamp");
     expect(typeof res.body.timestamp).toBe("string");
   });
