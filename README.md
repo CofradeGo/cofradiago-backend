@@ -1,80 +1,81 @@
-# 📘 Cofradiago — Frontend
+---
+title: "Cofradiago — Backend"
+description: "Backend del proyecto Cofradiago, desarrollado con Node.js, Express y TypeScript."
+---
 
-Repositorio del frontend de **Cofradiago**, la plataforma moderna para la gestión digital de hermandades y cofradías.
+# 🛠️ Cofradiago — Backend
 
-Este proyecto busca modernizar un sector tradicional con interfaces fluidas, accesibles y orientadas a la mejor experiencia de usuario.
+Backend oficial de **Cofradiago**, la plataforma moderna para la gestión digital de hermandades y cofradías.
 
 ---
 
 ## 🚀 Tecnologías principales
 
-- **Vite + React**
-- **TypeScript**
-- **TailwindCSS**
-- **React Router**
-- **Zustand** (estado global)
-- **Axios**
-- **ESLint + Prettier**
-- **Vitest**
+- Node.js 22  
+- Express  
+- TypeScript  
+- ESLint + Prettier  
+- Husky  
+- Jest (o Vitest según configuración)  
+- Dotenv  
+- JWT  
+- bcrypt  
+- PostgreSQL  
+- Prisma *(si aplica)*  
 
 ---
 
 ## 📦 Requisitos previos
 
-- Node.js **20+** (recomendado **22 LTS**)
-- npm / pnpm / yarn
-- Git
+- Node.js 20+ (recomendado 22 LTS)  
+- npm / pnpm / yarn  
+- Git  
+- Base de datos configurada  
 
 ---
 
 ## 🔧 Instalación
 
-Clona el repositorio:
-
 ```bash
-git clone https://github.com/tu-org/cofradiago-frontend.git
-cd cofradiago-frontend
-```
-
-Instala dependencias:
-```bash
+git clone https://github.com/tu-org/cofradiago-backend.git
+cd cofradiago-backend
 npm install
-```
-## 🔐 Configuración del entorno
-
-Edita el archivo de variables de entornos,
-Variables esperadas hasta el momento:
-```bash
-VITE_API_URL=https://api.tu-backend.com
-VITE_ENV=development
 ```
 ## 🏃 Scripts disponibles
 
-# Desarrollo
 ```bash
 npm run dev
 ```
-
-# Preview del build
-```bash
-npm run preview
-```
-
-# Build de producción
 ```bash
 npm run build
 ```
-
-# Linting
+```bash
+npm start
+```
+```bash
+npm run test
+```
 ```bash
 npm run lint
 ```
 
-# Lint con autofix
+## 📁 Estructura del proyecto
 ```bash
-npm run lint:fix
+/src
+  /config       → Configuraciones globales
+  /modules      → Módulos por funcionalidad (auth, users, hermandades…)
+  /middlewares  → Middlewares globales
+  /utils        → Utilidades y helpers
+  /types        → Tipos globales
+  /tests        → Tests unitarios
+index.ts        → Entry point
 ```
-# Tests
-```bash
-npm test
-```
+## 🧑‍💻 Flujo de trabajo (Git Flow)
+1. Crear rama desde develop.
+2. Hacer cambios.
+3. Ejecutar tests + lint.
+4. Crear PR hacia develop.
+5. Asociar la PR a su Historia de Usuario.
+
+## 🔒 Licencia
+Proyecto Privado - © Ángel Cárdenas Rodríguez
