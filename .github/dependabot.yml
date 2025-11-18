@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"       # Ubicación del package.json
+    schedule:
+      interval: "weekly"  # Dependabot revisa dependencias semanalmente
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
