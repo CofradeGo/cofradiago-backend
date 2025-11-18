@@ -1,27 +1,80 @@
-# CofradíaGo Backend
+# 📘 Cofradiago — Frontend
 
-Este repositorio contiene el backend del MVP de CofradíaGo, construido con **Node.js** y gestionado con **npm**.
+Repositorio del frontend de **Cofradiago**, la plataforma moderna para la gestión digital de hermandades y cofradías.
 
-## Instalación
+Este proyecto busca modernizar un sector tradicional con interfaces fluidas, accesibles y orientadas a la mejor experiencia de usuario.
 
-Clonar el repositorio y instalar dependencias:
+---
+
+## 🚀 Tecnologías principales
+
+- **Vite + React**
+- **TypeScript**
+- **TailwindCSS**
+- **React Router**
+- **Zustand** (estado global)
+- **Axios**
+- **ESLint + Prettier**
+- **Vitest**
+
+---
+
+## 📦 Requisitos previos
+
+- Node.js **20+** (recomendado **22 LTS**)
+- npm / pnpm / yarn
+- Git
+
+---
+
+## 🔧 Instalación
+
+Clona el repositorio:
 
 ```bash
-git clone <URL_REPO>
-cd cofradiago-backend
+git clone https://github.com/tu-org/cofradiago-frontend.git
+cd cofradiago-frontend
+```
+
+Instala dependencias:
+```bash
 npm install
 ```
-## Levantar el servidor
+## 🔐 Configuración del entorno
 
-Para levantar el servidor usamos el script
+Edita el archivo de variables de entornos,
+Variables esperadas hasta el momento:
+```bash
+VITE_API_URL=https://api.tu-backend.com
+VITE_ENV=development
+```
+## 🏃 Scripts disponibles
 
+# Desarrollo
 ```bash
 npm run dev
 ```
-## Ejecutar test
 
-Para ejecutar los tests usamos el script
+# Preview del build
+```bash
+npm run preview
+```
 
+# Build de producción
+```bash
+npm run build
+```
+
+# Linting
+```bash
+npm run lint
+```
+
+# Lint con autofix
+```bash
+npm run lint:fix
+```
+# Tests
 ```bash
 npm test
 ```
