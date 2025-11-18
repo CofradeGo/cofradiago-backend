@@ -1,0 +1,18 @@
+# Node modules locales, ya que Docker hará npm install dentro del contenedor
+node_modules
+dist
+
+# Archivos de logs
+*.log
+
+# Configuración de entorno local
+.env
+.vscode
+
+# Dependencias de IDE o sistema
+.DS_Store
+*.swp
+
+# Tests y carpetas temporales
+coverage
+tmp
