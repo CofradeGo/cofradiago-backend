@@ -1,0 +1,43 @@
+name: CI Backend
+
+# Dispara la CI en push o PR sobre develop o main
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Clona el repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Configura Node.js 22
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      # 3️⃣ Cache de dependencias npm
+      - name: Cache Node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # 4️⃣ Instala dependencias
+      - name: Install dependencies
+        run: npm install
+
+      # 5️⃣ Ejecuta ESLint para verificar estilo y errores de código
+      - name: Run lint
+        run: npm run lint
+
+      # 6️⃣ Ejecuta tests para asegurar calidad
+      - name: Run tests
+        run: npm test
