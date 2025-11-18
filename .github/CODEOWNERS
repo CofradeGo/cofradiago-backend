@@ -1,0 +1,44 @@
+# ============================================================
+# CODEOWNERS — Backend
+# Gestión profesional de revisiones de PR
+# ============================================================
+
+# ------------------------------------------------------------
+# OWNERS PRINCIPALES
+# El desarrollador principal (tú) debe aprobar siempre.
+# ------------------------------------------------------------
+*                   @TU_USUARIO
+
+# ------------------------------------------------------------
+# FUTUROS EQUIPOS (cuando tengas organización en GitHub)
+# Solo tendrás que crear los equipos en GitHub y añadir miembros.
+# (No pasa nada si aún no existen, no dará error)
+# ------------------------------------------------------------
+
+# Líderes del backend (revisión obligatoria)
+*                   @org/backend-leads
+
+# Equipo de infraestructura (pipelines, docker, devops...)
+/infra/              @org/infra-team
+
+# Equipo de seguridad (si algún día lo tienes)
+/src/auth/           @org/security-team
+
+# Equipo de API y controladores
+/src/controllers/    @org/api-team
+
+# Equipo de base de datos o modelos
+/src/models/         @org/db-team
+
+# Equipo de middlewares
+/src/middlewares/    @org/middleware-team
+
+# Equipo de test
+/tests/              @org/test-team
+
+# ------------------------------------------------------------
+# NOTA:
+# - Si trabajas solo, GitHub ignorará los equipos inexistentes.
+# - Lo único obligatorio es tu usuario.
+# - Cuando montes una organización, GitHub activará los equipos automáticamente.
+# ------------------------------------------------------------
