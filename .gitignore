@@ -18,3 +18,5 @@ build/
 
 # MacOS
 .DS_Store
+
+/src/generated/prisma

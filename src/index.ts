@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express, { type Application } from "express";
 import { healthRouter } from "./routes/health.ts";
+import testRoutes from "./routes/testRoutes.ts";
 import cors from "cors";
 
 const app: Application = express();
@@ -11,6 +12,8 @@ app.use(cors({ origin: "http://localhost:5173" }));
 
 // Registrar rutas
 app.use("/health", healthRouter);
+// Registrar rutas
+app.use("/api", testRoutes);
 
 // Solo levantar el servidor si no estamos en test
 if (process.env.NODE_ENV !== "test") {
