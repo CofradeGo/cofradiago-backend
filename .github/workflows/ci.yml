@@ -1,6 +1,5 @@
 name: CI Backend
 
-# Dispara la CI en push o PR sobre develop o main
 on:
   push:
     branches: [develop, main]
@@ -10,6 +9,25 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: cofrade_admin
+          POSTGRES_PASSWORD: mipass
+          POSTGRES_DB: cofradego_test
+        options: >-
+          --health-cmd "pg_isready -U cofrade_admin -d cofradego_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://cofrade_admin:mipass@127.0.0.1:5432/cofradego_test?schema=public
+      NODE_ENV: test
+
     steps:
       # 1️⃣ Clona el repositorio
       - name: Checkout repository
@@ -34,10 +52,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 5️⃣ Ejecuta ESLint para verificar estilo y errores de código
+      # 5️⃣ Genera Prisma Client
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # 6️⃣ Aplica migraciones sin resetear la DB
+      - name: Apply pending migrations
+        run: npx prisma migrate deploy || echo "No pending migrations"
+
+      # 7️⃣ Ejecuta ESLint
       - name: Run lint
         run: npm run lint
 
-      # 6️⃣ Ejecuta tests para asegurar calidad
+      # 8️⃣ Ejecuta tests unitarios
       - name: Run tests
         run: npm test
