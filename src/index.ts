@@ -16,7 +16,7 @@ app.use("/health", healthRouter);
 // Registrar rutas
 app.use("/api", testRoutes);
 // Montamos las rutas
-app.use("/auth", authRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 // Solo levantar el servidor si no estamos en test
 if (process.env.NODE_ENV !== "test") {
