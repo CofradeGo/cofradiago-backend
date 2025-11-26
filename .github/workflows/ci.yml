@@ -18,6 +18,7 @@ jobs:
           POSTGRES_USER: cofrade_admin
           POSTGRES_PASSWORD: mipass
           POSTGRES_DB: cofradego_test
+          JWT_SECRET: test_qa
         options: >-
           --health-cmd "pg_isready -U cofrade_admin -d cofradego_test"
           --health-interval 10s
