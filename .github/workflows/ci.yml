@@ -18,7 +18,6 @@ jobs:
           POSTGRES_USER: cofrade_admin
           POSTGRES_PASSWORD: mipass
           POSTGRES_DB: cofradego_test
-          JWT_SECRET: test_qa
         options: >-
           --health-cmd "pg_isready -U cofrade_admin -d cofradego_test"
           --health-interval 10s
@@ -28,19 +27,17 @@ jobs:
     env:
       DATABASE_URL: postgresql://cofrade_admin:mipass@127.0.0.1:5432/cofradego_test?schema=public
       NODE_ENV: test
+      JWT_SECRET: test_qa
 
     steps:
-      # 1️⃣ Clona el repositorio
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Configura Node.js 22
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '22'
 
-      # 3️⃣ Cache de dependencias npm
       - name: Cache Node modules
         uses: actions/cache@v3
         with:
@@ -49,22 +46,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      # 4️⃣ Instala dependencias
       - name: Install dependencies
         run: npm install
 
-      # 5️⃣ Genera Prisma Client
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      # 6️⃣ Aplica migraciones sin resetear la DB
       - name: Apply pending migrations
         run: npx prisma migrate deploy || echo "No pending migrations"
 
-      # 7️⃣ Ejecuta ESLint
       - name: Run lint
         run: npm run lint
 
-      # 8️⃣ Ejecuta tests unitarios
       - name: Run tests
         run: npm test
