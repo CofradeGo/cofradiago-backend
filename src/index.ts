@@ -3,6 +3,7 @@ import express, { type Application } from "express";
 import { healthRouter } from "./routes/health.ts";
 import testRoutes from "./routes/testRoutes.ts";
 import cors from "cors";
+import authRoutes from "./routes/auth.routes.ts";
 
 const app: Application = express();
 app.use(express.json());
@@ -14,6 +15,8 @@ app.use(cors({ origin: "http://localhost:5173" }));
 app.use("/health", healthRouter);
 // Registrar rutas
 app.use("/api", testRoutes);
+// Montamos las rutas
+app.use("/auth", authRoutes);
 
 // Solo levantar el servidor si no estamos en test
 if (process.env.NODE_ENV !== "test") {
