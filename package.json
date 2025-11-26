@@ -13,7 +13,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:reset": "prisma migrate reset",
-    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed": "npx tsx prisma/seed.ts",
     "prisma:studio": "prisma studio"
   },
   "repository": {
