@@ -1,7 +1,10 @@
 import { prisma } from "../src/config/prismaClient"; // Ajusta según tu path
-
+import bcrypt from "bcrypt";
 async function main() {
   console.log("Seeding database...");
+
+  // Hasheamos la contraseña antes de crear usuarios
+  const hashedPassword = await bcrypt.hash("123456", 10);
 
   // Hermandad Soledad
   const soledad = await prisma.hermandad.upsert({
@@ -15,13 +18,13 @@ async function main() {
         create: [
           {
             username: "dmg_soledad",
-            password: "123456", // temporal, luego hasheo
+            password: hashedPassword, // temporal, luego hasheo
             role: "DMG",
             email: "angelcardenasrod@gmail.com",
           },
           {
             username: "aux1_soledad",
-            password: "123456",
+            password: hashedPassword,
             role: "AUXILIAR",
             email: "angelcardenasrod@gmail.com",
           },
@@ -44,13 +47,13 @@ async function main() {
         create: [
           {
             username: "dmg_angustias",
-            password: "123456",
+            password: hashedPassword,
             role: "DMG",
             email: "angelcardenasrod@gmail.com",
           },
           {
             username: "aux1_angustias",
-            password: "123456",
+            password: hashedPassword,
             role: "AUXILIAR",
             email: "angelcardenasrod@gmail.com",
           },
