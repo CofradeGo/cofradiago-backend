@@ -6,8 +6,32 @@ datasource db {
   provider = "postgresql"
 }
 
-model Test {
-  id   Int    @id @default(autoincrement())
-  name String
+model Hermandad {
+  id            Int      @id @default(autoincrement())
+  name          String
+  domain        String   @unique
+  officialEmail String?  // correo institucional de la hermandad
+  users         User[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
+
+enum UserRole {
+  DMG
+  AUXILIAR
+}
+
+model User {
+  id            Int        @id @default(autoincrement())
+  username      String     @unique
+  password      String
+  role          UserRole
+  email         String?    // correo corporativo opcional
+  hermandad     Hermandad  @relation(fields: [hermandadId], references: [id])
+  hermandadId   Int
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
