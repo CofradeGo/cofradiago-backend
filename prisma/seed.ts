@@ -1,11 +1,13 @@
- import { prisma } from "../src/config/prismaClient"; // Ajusta según tu path
+import { prisma } from "../src/config/prismaClient"; // Ajusta según tu path
 
 async function main() {
   console.log("Seeding database...");
 
   // Hermandad Soledad
-  const soledad = await prisma.hermandad.create({
-    data: {
+  const soledad = await prisma.hermandad.upsert({
+    where: { domain: "soledad.com" },
+    update: {}, // no hace nada si ya existe
+    create: {
       name: "Soledad",
       domain: "soledad.com",
       officialEmail: "angelcardenasrod@gmail.com",
@@ -26,12 +28,15 @@ async function main() {
         ],
       },
     },
+    include: { users: true },
   });
-  console.log(`Hermandad creada: ${soledad.name}`);
+  console.log(`Hermandad creada o verificada: ${soledad.name} con ${soledad.users.length} usuarios`);
 
   // Hermandad Angustias
-  const angustias = await prisma.hermandad.create({
-    data: {
+  const angustias = await prisma.hermandad.upsert({
+    where: { domain: "angustias.com" },
+    update: {},
+    create: {
       name: "Angustias",
       domain: "angustias.com",
       officialEmail: "angelcardenasrod@gmail.com",
@@ -52,8 +57,9 @@ async function main() {
         ],
       },
     },
+    include: { users: true },
   });
-  console.log(`Hermandad creada: ${angustias.name}`);
+  console.log(`Hermandad creada o verificada: ${angustias.name} con ${angustias.users.length} usuarios`);
 
   console.log("Seeding finished!");
 }
