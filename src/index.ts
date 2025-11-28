@@ -1,22 +1,23 @@
 import "dotenv/config";
 import express, { type Application } from "express";
-import { healthRouter } from "./routes/health.ts";
-import testRoutes from "./routes/testRoutes.ts";
+import testRoutes from "./routes/test.routes.ts";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes.ts";
+import hermandadRoutes from "./routes/hermandad.routes.ts";
+import userRoutes from "./routes/user.routes.ts";
 
 const app: Application = express();
 app.use(express.json());
 
 //Para permitir conexión con front
 app.use(cors({ origin: "http://localhost:5173" }));
+//Ruta para el test de middleware
+app.use("/api/test", testRoutes);
 
-// Registrar rutas
-app.use("/health", healthRouter);
-// Registrar rutas
-app.use("/api", testRoutes);
 // Montamos las rutas
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/hermandad", hermandadRoutes);
+app.use("/api/v1/users", userRoutes);
 
 // Solo levantar el servidor si no estamos en test
 if (process.env.NODE_ENV !== "test") {

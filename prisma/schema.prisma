@@ -31,7 +31,8 @@ model User {
   email         String?    // correo corporativo opcional
   hermandad     Hermandad  @relation(fields: [hermandadId], references: [id])
   hermandadId   Int
-
+  isActive      Boolean    @default(true)
+  
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
