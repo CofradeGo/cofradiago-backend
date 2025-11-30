@@ -1,6 +1,6 @@
 import {prisma} from "../config/prismaClient.ts";
 import type { User } from "../models/user.model.ts";
-import type { Hermandad } from "../models/hermandad.model.ts";
+import type { Hermandad, HermandadResponseDTO, UpdateHermandadDTO } from "../models/hermandad.model.ts";
 
 export const getHermandadByDomain = async (
   domain: string,
@@ -36,3 +36,41 @@ export const getHermandadByDomain = async (
     })),
   };
 };
+
+export const updateHermandad = async (
+  domain: string,
+  user: User,
+  data: UpdateHermandadDTO
+): Promise<HermandadResponseDTO> => {
+  const hermandad = await prisma.hermandad.findUnique({
+    where: { domain },
+    include: { users: true },
+  });
+
+  if (!hermandad) throw new Error("HERMANDAD_NOT_FOUND");
+
+  // Solo el DMG de la hermandad puede actualizar
+  const dmUser = hermandad.users.find((u) => u.id === user.id && u.role === "DMG");
+  if (!dmUser) throw new Error("ACCESS_DENIED");
+
+  // Actualizamos solo los campos que se pasen
+  const updatedHermandad = await prisma.hermandad.update({
+    where: { id: hermandad.id },
+    data: {
+      name: data.name ?? hermandad.name,
+      officialEmail: data.officialEmail ?? hermandad.officialEmail,
+    },
+    select: {
+      id: true,
+      name: true,
+      domain: true,
+      officialEmail: true,
+      users: {
+        select: { id: true, username: true, role: true, email: true },
+      },
+    },
+  });
+
+  return updatedHermandad;
+};
+

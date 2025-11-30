@@ -1,6 +1,6 @@
 import {prisma} from "../config/prismaClient.ts";
 import bcrypt from "bcrypt";
-import type { User } from "../models/user.model.ts";
+import type { User, UpdateUserDTO} from "../models/user.model.ts";
 
 
 export class UserService {
@@ -133,4 +133,75 @@ export class UserService {
       return user ? [user] : [];
     }
   }
+  /**
+   * Update User
+   * @param requestingUser 
+   * @param data 
+   * @returns 
+   */
+  static async updateUser(
+    requestingUser: User,
+    dto: UpdateUserDTO
+  ) {
+    const { username, email, oldPassword, newPassword } = dto;
+
+    // 1. Cargar usuario actual (para validar contraseña)
+    const userInDb = await prisma.user.findUnique({
+      where: { id: requestingUser.id },
+    });
+
+    if (!userInDb) {
+      throw new Error("USER_NOT_FOUND");
+    }
+
+    // 2. Validar actualización de contraseña
+    if (oldPassword || newPassword) {
+      if (!oldPassword || !newPassword) {
+        throw new Error("PASSWORD_FIELDS_REQUIRED");
+      }
+
+      const isOldPasswordValid = await bcrypt.compare(
+        oldPassword,
+        userInDb.password
+      );
+
+      if (!isOldPasswordValid) {
+        throw new Error("INVALID_OLD_PASSWORD");
+      }
+    }
+
+    // 3. Construir objeto de actualización
+    const dataToUpdate: Record<string, unknown> = {};
+
+    if (username) dataToUpdate.username = username;
+    if (email !== undefined) dataToUpdate.email = email;
+
+    if (newPassword) {
+      const hashed = await bcrypt.hash(newPassword, 10);
+      dataToUpdate.password = hashed;
+    }
+
+    // Si no hay cambios, devolver error
+    if (Object.keys(dataToUpdate).length === 0) {
+      throw new Error("NO_FIELDS_TO_UPDATE");
+    }
+
+    // 4. Actualizar en BBDD
+    const updated = await prisma.user.update({
+      where: { id: requestingUser.id },
+      data: dataToUpdate,
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        hermandadId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return updated;
+  }
+  
 }

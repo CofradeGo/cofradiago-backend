@@ -16,3 +16,10 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface UpdateUserDTO {
+  username?: string | undefined;
+  email?: string | null | undefined;
+  oldPassword?: string | undefined;
+  newPassword?: string | undefined;
+}
