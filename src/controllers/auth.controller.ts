@@ -22,6 +22,10 @@ export const login = async (req: Request, res: Response) => {
           return res.status(404).json({ message: "Hermandad no encontrada" });
         case "INVALID_CREDENTIALS":
           return res.status(401).json({ message: "Credenciales inválidas" });
+        case "USER_INACTIVE":                      // 👈 NUEVO
+          return res.status(403).json({
+            message: "El usuario está inactivo y no puede iniciar sesión",
+          });
         default:
           console.error(error);
           return res.status(500).json({ message: "Error interno del servidor" });

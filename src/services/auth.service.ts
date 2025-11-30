@@ -2,12 +2,14 @@ import { prisma } from "../config/prismaClient.ts";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/index.ts";
+import type { User, UserRole } from "../models/user.model.ts";
 
-interface LoginPayload {
-  userId: number;
-  username: string;
+interface TokenPayload {
+  id: number;
+  role: UserRole;
+  email?: string | null | undefined;
   hermandadId: number;
-  role: "DMG" | "AUXILIAR";
+  username: string;
 }
 
 export const login = async (
@@ -15,35 +17,36 @@ export const login = async (
   username: string,
   password: string
 ): Promise<string> => {
-  // Buscar la hermandad por domain
   const hermandad = await prisma.hermandad.findUnique({
     where: { domain },
     include: { users: true },
   });
 
-  if (!hermandad) {
-    throw new Error("HERMANDAD_NOT_FOUND");
-  }
+  if (!hermandad) throw new Error("HERMANDAD_NOT_FOUND");
 
-  // Buscar el usuario dentro de la hermandad
-  const user = hermandad.users.find(u => u.username === username);
-  if (!user) {
-    throw new Error("INVALID_CREDENTIALS");
-  }
+  const user: User | undefined = hermandad.users.find(
+    (u) => u.username === username
+  );
 
-  // Validar contraseña
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) {
-    throw new Error("INVALID_CREDENTIALS");
-  }
+  if (!user) throw new Error("INVALID_CREDENTIALS");
 
-  // Generar JWT
-  const payload: LoginPayload = {
-    userId: user.id,
-    username: user.username,
-    hermandadId: hermandad.id,
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) throw new Error("INVALID_CREDENTIALS");
+
+  // 👇 NUEVA VALIDACIÓN
+  if (!user.isActive) throw new Error("USER_INACTIVE");
+
+  if (!JWT_SECRET) throw new Error("JWT_SECRET debe estar definido en .env");
+
+  const payload: TokenPayload = {
+    id: user.id,
     role: user.role,
+    email: user.email,
+    hermandadId: hermandad.id,
+    username: user.username
   };
 
-  return jwt.sign(payload, JWT_SECRET!, { expiresIn: "1h" });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 };
+
+
