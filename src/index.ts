@@ -5,6 +5,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes.ts";
 import hermandadRoutes from "./routes/hermandad.routes.ts";
 import userRoutes from "./routes/user.routes.ts";
+import passwordRoutes from "./routes/password.routes.ts";
 
 const app: Application = express();
 app.use(express.json());
@@ -18,6 +19,7 @@ app.use("/api/test", testRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/hermandad", hermandadRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/password", passwordRoutes);
 
 // Solo levantar el servidor si no estamos en test
 if (process.env.NODE_ENV !== "test") {
