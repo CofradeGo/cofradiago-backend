@@ -2,6 +2,12 @@ import {prisma} from "../config/prismaClient.ts";
 import type { User } from "../models/user.model.ts";
 import type { Hermandad, HermandadResponseDTO, UpdateHermandadDTO } from "../models/hermandad.model.ts";
 
+/**
+ * Get all info for the Hermandad
+ * @param domain 
+ * @param user 
+ * @returns 
+ */
 export const getHermandadByDomain = async (
   domain: string,
   user: User
@@ -35,6 +41,32 @@ export const getHermandadByDomain = async (
       email: u.email,
     })),
   };
+};
+
+/**
+ * Get hdad name only for public
+ * @param domain 
+ * @returns 
+ */
+export const getPublicInfoHdad = async function name(domain: string) {
+  const cleanDomain = domain.trim().toLowerCase();
+
+  // Buscar solo los campos PUBLICABLES
+  const hermandad = await prisma.hermandad.findUnique({
+    where: { domain: cleanDomain },
+    select: {
+      name: true,
+      domain: true,
+      //INLCUIR AQUI EL LOGO DE LA HDAD
+    },
+  });
+
+  if (!hermandad) {
+    throw new Error("HERMANDAD_NOT_FOUND");
+  }
+
+  return hermandad;
+
 };
 
 export const updateHermandad = async (
