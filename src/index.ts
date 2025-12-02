@@ -21,6 +21,9 @@ app.use("/api/v1/hermandad", hermandadRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/password", passwordRoutes);
 
+// Routes public
+app.use("/public", hermandadRoutes);
+
 // Solo levantar el servidor si no estamos en test
 if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
