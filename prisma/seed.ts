@@ -1,5 +1,6 @@
 import { prisma } from "../src/config/prismaClient"; // Ajusta según tu path
 import bcrypt from "bcrypt";
+
 async function main() {
   console.log("Seeding database...");
 
@@ -8,17 +9,18 @@ async function main() {
 
   // Hermandad Soledad
   const soledad = await prisma.hermandad.upsert({
-    where: { domain: "soledad.com" },
-    update: {}, // no hace nada si ya existe
+    where: { domain: "soledad-sanlucar" },
+    update: {},
     create: {
       name: "Soledad",
       domain: "soledad.com",
       officialEmail: "angelcardenasrod@gmail.com",
+      logoUrl: "/uploads/logos/soledad.png", // ruta local
       users: {
         create: [
           {
             username: "dmg_soledad",
-            password: hashedPassword, // temporal, luego hasheo
+            password: hashedPassword,
             role: "DMG",
             email: "angelcardenasrod@gmail.com",
           },
@@ -37,12 +39,13 @@ async function main() {
 
   // Hermandad Angustias
   const angustias = await prisma.hermandad.upsert({
-    where: { domain: "angustias.com" },
+    where: { domain: "angustias-sanlucar" },
     update: {},
     create: {
       name: "Angustias",
       domain: "angustias.com",
       officialEmail: "angelcardenasrod@gmail.com",
+      logoUrl: "/uploads/logos/angustias.png", // ruta local
       users: {
         create: [
           {

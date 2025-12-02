@@ -20,7 +20,7 @@ export interface Hermandad {
   domain: string;
   officialEmail?: string | null;
   users?: Partial<User>[] | null; // relacional, opcional para cargas parciales
-
+  logoUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

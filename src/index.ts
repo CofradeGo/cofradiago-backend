@@ -6,6 +6,12 @@ import authRoutes from "./routes/auth.routes.ts";
 import hermandadRoutes from "./routes/hermandad.routes.ts";
 import userRoutes from "./routes/user.routes.ts";
 import passwordRoutes from "./routes/password.routes.ts";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Resolver __dirname en ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app: Application = express();
 app.use(express.json());
@@ -23,6 +29,8 @@ app.use("/api/v1/password", passwordRoutes);
 
 // Routes public
 app.use("/public", hermandadRoutes);
+
+app.use("/uploads/logos", express.static(path.join(__dirname, "..", "uploads/logos")));
 
 // Solo levantar el servidor si no estamos en test
 if (process.env.NODE_ENV !== "test") {

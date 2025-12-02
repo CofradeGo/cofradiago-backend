@@ -11,6 +11,7 @@ model Hermandad {
   name          String
   domain        String  @unique
   officialEmail String? // correo institucional de la hermandad
+  logoUrl       String?
   users         User[]
 
   createdAt DateTime @default(now())
