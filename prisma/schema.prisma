@@ -37,7 +37,22 @@ model User {
   updatedAt DateTime @updatedAt
 
   passwordResetTokens PasswordResetToken[]
+
+  refreshTokens RefreshToken[]
 }
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  tokenHash  String
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  deviceInfo String?  // opcional: user-agent / etiqueta del dispositivo
+  ip         String?  // opcional: ip desde la que se creó
+}
+
 
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())

@@ -13,7 +13,7 @@ async function main() {
     update: {},
     create: {
       name: "Soledad",
-      domain: "soledad.com",
+      domain: "soledad-sanlucar",
       officialEmail: "angelcardenasrod@gmail.com",
       logoUrl: "/uploads/logos/soledad.png", // ruta local
       users: {
@@ -43,7 +43,7 @@ async function main() {
     update: {},
     create: {
       name: "Angustias",
-      domain: "angustias.com",
+      domain: "angustias-sanlucar",
       officialEmail: "angelcardenasrod@gmail.com",
       logoUrl: "/uploads/logos/angustias.png", // ruta local
       users: {

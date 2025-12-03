@@ -1,38 +1,92 @@
+// auth.controller.ts
 import type { Request, Response } from "express";
-import * as authService from "../services/auth.service.ts";
+import {
+  loginService,
+  refreshTokenService,
+} from "../services/auth.service.ts";
 
-export const login = async (req: Request, res: Response) => {
+interface LoginRequestParams {
+  domain: string;
+}
+
+interface LoginRequestBody {
+  username: string;
+  password: string;
+}
+
+// ---------------- LOGIN ----------------
+export const login = async (
+  req: Request<LoginRequestParams, unknown, LoginRequestBody>,
+  res: Response
+) => {
+  const { username, password } = req.body;
+  const { domain } = req.params;
+
+  const deviceInfo = req.headers["user-agent"] ?? undefined;
+  const ip = req.ip ?? undefined;
+
   try {
-    const { domain } = req.params;
-    const { username, password } = req.body;
+    const { accessToken, refreshToken } = await loginService(
+      domain,
+      username,
+      password,
+      deviceInfo,
+      ip
+    );
 
-    // Validación de campos obligatorios
-    if (!domain || !username || !password) {
-      return res.status(400).json({ message: "Faltan campos obligatorios" });
+    // Guardar refresh token en cookie httpOnly
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true, // poner false solo en desarrollo si no usas HTTPS
+      sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+      path: "/",
+    });
+
+    // Devolver solo accessToken en JSON
+    return res.status(200).json({ accessToken });
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error("LOGIN_ERROR");
+    return res.status(400).json({
+      error: err.message,
+    });
+  }
+};
+
+// ---------------- REFRESH TOKEN ----------------
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    // Leer refresh token desde cookie
+    const token = req.cookies.refreshToken;
+    if (!token) {
+      return res.status(401).json({ error: "REFRESH_TOKEN_REQUIRED" });
     }
 
-    // Llamada al service para autenticar
-    const token = await authService.login(domain, username, password);
+    const deviceInfo = req.headers["user-agent"] ?? undefined;
+    const ip = req.ip;
 
-    return res.status(200).json({ token });
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      switch (error.message) {
-        case "HERMANDAD_NOT_FOUND":
-          return res.status(404).json({ message: "Hermandad no encontrada" });
-        case "INVALID_CREDENTIALS":
-          return res.status(401).json({ message: "Credenciales inválidas" });
-        case "USER_INACTIVE":                      // 👈 NUEVO
-          return res.status(403).json({
-            message: "El usuario está inactivo y no puede iniciar sesión",
-          });
-        default:
-          console.error(error);
-          return res.status(500).json({ message: "Error interno del servidor" });
-      }
-    } else {
-      console.error(error);
-      return res.status(500).json({ message: "Error desconocido" });
+    const { accessToken, newRefreshToken } = await refreshTokenService(
+      token,
+      deviceInfo,
+      ip
+    );
+
+    // Rotar refresh token si se generó uno nuevo
+    if (newRefreshToken) {
+      res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: true, // false solo en desarrollo si no usas HTTPS
+        sameSite: "strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: "/",
+      });
     }
+
+    return res.status(200).json({ accessToken });
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error("REFRESH_TOKEN_ERROR");
+    return res.status(401).json({
+      error: err.message,
+    });
   }
 };

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import cookieParser from "cookie-parser";
 import express, { type Application } from "express";
 import testRoutes from "./routes/test.routes.ts";
 import cors from "cors";
@@ -15,7 +16,7 @@ const __dirname = path.dirname(__filename);
 
 const app: Application = express();
 app.use(express.json());
-
+app.use(cookieParser()); // para cookies
 //Para permitir conexión con front
 app.use(cors({ origin: "http://localhost:5173" }));
 //Ruta para el test de middleware
