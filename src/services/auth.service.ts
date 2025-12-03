@@ -134,3 +134,31 @@ export const refreshTokenService = async (
 
   return { accessToken, newRefreshToken };
 };
+
+// ---------------- LOGOUT ----------------
+
+export const logoutService = async (
+  refreshToken: string | undefined,
+  deviceInfo?: string,
+  ip?: string
+) => {
+  if (!refreshToken) return;
+
+  const hashed = crypto.createHash("sha256").update(refreshToken).digest("hex");
+
+  const tokenRecord = await prisma.refreshToken.findFirst({
+    where: { tokenHash: hashed }, // asegúrate de que la columna es tokenHash
+  });
+
+  if (!tokenRecord) return;
+
+  await prisma.refreshToken.delete({
+    where: { id: tokenRecord.id },
+  });
+
+  console.log(
+    `🔐 Logout realizado — user ${tokenRecord.userId}, IP: ${ip}, device: ${deviceInfo}`
+  );
+
+  return;
+};

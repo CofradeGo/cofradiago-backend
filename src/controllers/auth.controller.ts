@@ -2,6 +2,7 @@
 import type { Request, Response } from "express";
 import {
   loginService,
+  logoutService,
   refreshTokenService,
 } from "../services/auth.service.ts";
 
@@ -88,5 +89,30 @@ export const refreshToken = async (req: Request, res: Response) => {
     return res.status(401).json({
       error: err.message,
     });
+  }
+};
+
+// ---------------- LOGOUT ----------------
+export const logoutController = async (req: Request, res: Response) => {
+  try {
+    // 1️⃣ Recogemos la cookie refreshToken
+    const refreshToken = req.cookies?.refreshToken;
+
+    // 2️⃣ Llamamos al service para eliminarlo
+    await logoutService(refreshToken, req.headers["user-agent"], req.ip);
+
+    // 3️⃣ Borramos la cookie en el navegador
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
+
+    // 4️⃣ Respondemos OK
+    return res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("Logout controller error:", error);
+    return res.status(500).json({ message: "Logout failed" });
   }
 };
