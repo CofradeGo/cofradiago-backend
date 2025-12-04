@@ -1,9 +1,15 @@
 import { Router } from "express";
-import * as authController from "../controllers/auth.controller.ts";
+import { login, logoutController, refreshToken } from "../controllers/auth.controller.ts";
 
 const router = Router();
 
-// Endpoint login con domain como path parameter
-router.post("/login/:domain", authController.login);
+// Endpoint login
+router.post("/login/:domain", login); // ✅ controller, no service
+
+// Endpoint refresh token
+router.post("/refresh-token", refreshToken);
+
+// Logout
+router.post("/logout", logoutController);
 
 export default router;
