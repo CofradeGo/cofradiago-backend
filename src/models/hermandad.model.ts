@@ -1,9 +1,10 @@
 import type { User } from "./user.model.ts";
 
 export interface UpdateHermandadDTO {
-  name?: string;
-  officialEmail?: string;
-  domain?: string;
+  name?: string | null | undefined;
+  officialEmail?: string | null | undefined;
+  domain?: string | null | undefined;
+  logoUrl?: string | null | undefined;
 }
 
 export interface HermandadResponseDTO {
