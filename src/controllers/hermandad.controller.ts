@@ -66,20 +66,24 @@ export const getPublicHdad = async function name(req: Request, res: Response) {
 }
 };
 
-// PUT /api/hermandad/:domain
+// PUT /api/v1/hermandad/:domain
 export const updateHermandad = async (req: Request, res: Response) => {
   try {
     const { domain } = req.params;
-    const user = req.user as User; // authMiddleware asegura que existe
+    const user = req.user as User;
+
+    if (!domain) return res.status(400).json({ message: "El parámetro domain es obligatorio" });
+
     const { name, officialEmail } = req.body;
-    // Verificamos que existe el domain.
-    if (!domain) {
-      return res.status(400).json({ message: "El parámetro domain es obligatorio" });
-    }
+
+    // ✅ Si viene un archivo, Multer lo deja en req.file
+    const file = req.file;
+    const logoUrl = file ? `/uploads/logos/${file.filename}` : null;
 
     const updatedHermandad = await hermandadService.updateHermandad(domain, user, {
       name,
       officialEmail,
+      logoUrl, // logo opcional
     });
 
     return res.status(200).json({
@@ -98,7 +102,7 @@ export const updateHermandad = async (req: Request, res: Response) => {
           return res.status(500).json({ message: "Error interno del servidor" });
       }
     }
-    console.error(error);
-    return res.status(500).json({ message: "Error desconocido" });
+    console.error("Error desconocido:", error);
+    return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
