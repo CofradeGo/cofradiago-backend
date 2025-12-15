@@ -1,4 +1,3 @@
-// auth.controller.ts
 import type { Request, Response } from "express";
 import {
   loginService,
@@ -15,7 +14,12 @@ interface LoginRequestBody {
   password: string;
 }
 
-// ---------------- LOGIN ----------------
+/**
+ * LOGIN
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const login = async (
   req: Request<LoginRequestParams, unknown, LoginRequestBody>,
   res: Response
@@ -54,7 +58,12 @@ export const login = async (
   }
 };
 
-// ---------------- REFRESH TOKEN ----------------
+/**
+ * REFRESH TOKEN
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const refreshToken = async (req: Request, res: Response) => {
   try {
     // Leer refresh token desde cookie
@@ -92,7 +101,12 @@ export const refreshToken = async (req: Request, res: Response) => {
   }
 };
 
-// ---------------- LOGOUT ----------------
+/**
+ * LOGOUT
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const logoutController = async (req: Request, res: Response) => {
   try {
     // 1️⃣ Recogemos la cookie refreshToken

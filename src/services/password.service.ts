@@ -1,26 +1,40 @@
 import { prisma } from "../config/prismaClient.ts";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import { MailService } from "./mail.service.ts";
 
-// Duración del token
 const RESET_TOKEN_EXPIRATION = 1000 * 60 * 60; // 1 hora
 
 export class PasswordService {
   /**
-   * Genera un token de reseteo para un usuario dado.
-   * Devuelve el token en texto plano (para enviarlo por email) y lo guarda hasheado en BD
+   * Genera un token de reseteo y envía el email
    */
-  static async createResetToken(username: string) {
-    const user = await prisma.user.findUnique({ where: { username } });
-    if (!user) throw new Error("USER_NOT_FOUND");
+  static async createResetToken(username: string, domain: string): Promise<void> {
+    // 1️⃣ Buscar usuario que pertenezca a la hermandad
+    const user = await prisma.user.findFirst({
+      where: {
+        username,
+        hermandad: {
+          domain
+        }
+      },
+      include: {
+        hermandad: {
+          select: { domain: true }
+        }
+      }
+    });
 
-    // Generar token aleatorio
+    // 2️⃣ No revelar si no existe
+    if (!user || !user.email) return;
+
+    // 3️⃣ Generar token aleatorio
     const token = crypto.randomBytes(32).toString("hex");
 
-    // Hashear token antes de guardar en la DB
+    // 4️⃣ Hashear token
     const hashedToken = await bcrypt.hash(token, 10);
 
-    // Guardar token en BD con relación al usuario y expiración
+    // 5️⃣ Guardar token en BD
     await prisma.passwordResetToken.create({
       data: {
         tokenHash: hashedToken,
@@ -29,14 +43,21 @@ export class PasswordService {
       },
     });
 
-    return token; // Este token se envía al usuario por email
+    // 6️⃣ Construir URL con domain de la hermandad
+    const resetUrl = `${process.env.FRONTEND_URL}/h/${user.hermandad.domain}/reset-password?token=${token}`;
+
+    // 7️⃣ Enviar email
+    await MailService.sendResetPasswordEmail(user.email, resetUrl);
   }
 
   /**
    * Resetea la contraseña del usuario usando un token
    */
   static async resetPassword(token: string, newPassword: string) {
-    // Buscar tokens activos
+    if (newPassword.length < 8) {
+      throw new Error("WEAK_PASSWORD");
+    }
+
     const resetTokens = await prisma.passwordResetToken.findMany({
       where: {
         expiresAt: { gte: new Date() },
@@ -44,28 +65,24 @@ export class PasswordService {
       include: { user: true },
     });
 
-    // Encontrar el token válido comparando con el hasheado
     const matchedToken = await Promise.all(
       resetTokens.map(async (t) => {
         const isValid = await bcrypt.compare(token, t.tokenHash);
         return isValid ? t : null;
       })
-    ).then((results) => results.find((t) => t !== null));
+    ).then((results) => results.find(Boolean));
 
     if (!matchedToken) throw new Error("INVALID_OR_EXPIRED_TOKEN");
 
     const user = matchedToken!.user;
 
-    // Hashear nueva contraseña
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Actualizar contraseña del usuario
     await prisma.user.update({
       where: { id: user.id },
       data: { password: hashedPassword },
     });
 
-    // Borrar todos los tokens de reseteo del usuario (para seguridad)
     await prisma.passwordResetToken.deleteMany({
       where: { userId: user.id },
     });
