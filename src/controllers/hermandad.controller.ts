@@ -2,6 +2,13 @@ import type { Request, Response } from "express";
 import * as hermandadService from "../services/hermandad.service.ts";
 import type { User } from "../models/user.model.ts";
 
+/**
+ * get hermandad info
+ * @description Enpoint para devolver los datos de la hdad
+ * @param req 
+ * @param res 
+ * @returns ∫
+ */
 export const getHermandad = async (req: Request, res: Response) => {
   try {
     const { domain } = req.params;
@@ -66,7 +73,12 @@ export const getPublicHdad = async function name(req: Request, res: Response) {
 }
 };
 
-// PUT /api/v1/hermandad/:domain
+/**
+ * UT /api/v1/hermandad/:domain
+ * @param req 
+ * @param res 
+ * @returns 
+ */
 export const updateHermandad = async (req: Request, res: Response) => {
   try {
     const { domain } = req.params;
