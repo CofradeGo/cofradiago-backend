@@ -44,7 +44,7 @@ export class PasswordService {
     });
 
     // 6️⃣ Construir URL con domain de la hermandad
-    const resetUrl = `${process.env.FRONTEND_URL}/h/${user.hermandad.domain}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/${user.hermandad.domain}/reset-password?token=${token}`;
 
     // 7️⃣ Enviar email
     await MailService.sendResetPasswordEmail(user.email, resetUrl);
