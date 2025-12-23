@@ -1,8 +1,66 @@
-import { prisma } from "../src/config/prismaClient"; // Ajusta según tu path
+import { Prisma } from "@prisma/client";
+import { prisma } from "../src/config/prismaClient";
 import bcrypt from "bcrypt";
 
+/* ===========================
+   Datos realistas
+=========================== */
+
+const nombres = [
+  "Juan", "Antonio", "Manuel", "Francisco", "José",
+  "David", "Carlos", "Daniel", "Miguel", "Rafael",
+  "María", "Carmen", "Ana", "Isabel", "Laura",
+  "Lucía", "Marta", "Cristina", "Elena", "Patricia",
+];
+
+const apellidos = [
+  "García", "Pérez", "López", "Martínez", "Sánchez",
+  "Rodríguez", "Fernández", "Gómez", "Ruiz", "Díaz",
+  "Moreno", "Álvarez", "Muñoz", "Romero", "Navarro",
+];
+
+function generarHermanos(
+  hermandadId: number,
+  cantidad: number,
+  apellidoHermandad: "Soledad" | "Angustias"
+): Prisma.HermanoCreateManyInput[] {
+
+  const hermanos: Prisma.HermanoCreateManyInput[] = [];
+
+  for (let i = 1; i <= cantidad; i++) {
+    const nombre = nombres[i % nombres.length];
+    const apellido1 = apellidos[i % apellidos.length];
+
+    hermanos.push({
+      hermandadId,
+      numeroAntiguedad: i,
+      nombre,
+      apellidos: `${apellido1} ${apellidoHermandad}`,
+      telefono: `6${Math.floor(10000000 + Math.random() * 89999999)}`,
+      email: `${nombre.toLowerCase()}.${apellido1.toLowerCase()}.${apellidoHermandad.toLowerCase()}${i}@example.com`,
+      direccion: `Calle Real ${i}`,
+      fechaNacimiento: new Date(
+        1965 + (i % 35),
+        i % 12,
+        (i % 28) + 1
+      ),
+      fechaAltaHermandad: new Date(
+        1990 + (i % 30),
+        i % 12,
+        1
+      ),
+    });
+  }
+
+  return hermanos;
+}
+
+/* ===========================
+   Seed principal
+=========================== */
+
 async function main() {
-  console.log("Seeding database...");
+  console.log("🌱 Seeding database...");
 
   const hashedPassword = await bcrypt.hash("123456", 10);
 
@@ -19,42 +77,29 @@ async function main() {
       logoUrl: "/uploads/logos/soledad.png",
       users: {
         create: [
-          { username: "dmg_soledad", password: hashedPassword, role: "DMG", email: "angelcardenasrod@gmail.com" },
-          { username: "aux1_soledad", password: hashedPassword, role: "AUXILIAR", email: "angelcardenasrod@gmail.com" },
+          {
+            username: "dmg_soledad",
+            password: hashedPassword,
+            role: "DMG",
+            email: "angelcardenasrod@gmail.com",
+          },
+          {
+            username: "aux1_soledad",
+            password: hashedPassword,
+            role: "AUXILIAR",
+            email: "angelcardenasrod@gmail.com",
+          },
         ],
       },
     },
   });
-  console.log(`Hermandad creada o verificada: ${soledad.name}`);
 
-  // Crear hermanos para Soledad (si no existen)
   await prisma.hermano.createMany({
-    data: [
-      {
-        hermandadId: soledad.id,
-        numeroAntiguedad: 1,
-        nombre: "Juan",
-        apellidos: "Pérez",
-        telefono: "600111222",
-        email: "juan.perez@example.com",
-        direccion: "Calle Falsa 123",
-        fechaNacimiento: new Date("1980-05-15"),
-        fechaAltaHermandad: new Date("2000-03-01"),
-      },
-      {
-        hermandadId: soledad.id,
-        numeroAntiguedad: 2,
-        nombre: "María",
-        apellidos: "García",
-        telefono: "600333444",
-        email: "maria.garcia@example.com",
-        direccion: "Avenida Siempre Viva 45",
-        fechaNacimiento: new Date("1985-09-20"),
-        fechaAltaHermandad: new Date("2005-06-10"),
-      },
-    ],
-    skipDuplicates: true, // Evita error si el hermano ya existe
+    data: generarHermanos(soledad.id, 100, "Soledad"),
+    skipDuplicates: true,
   });
+
+  console.log("✔ 100 hermanos creados para Soledad");
 
   // ===========================
   // Hermandad Angustias
@@ -69,44 +114,31 @@ async function main() {
       logoUrl: "/uploads/logos/angustias.png",
       users: {
         create: [
-          { username: "dmg_angustias", password: hashedPassword, role: "DMG", email: "angelcardenasrod@gmail.com" },
-          { username: "aux1_angustias", password: hashedPassword, role: "AUXILIAR", email: "angelcardenasrod@gmail.com" },
+          {
+            username: "dmg_angustias",
+            password: hashedPassword,
+            role: "DMG",
+            email: "angelcardenasrod@gmail.com",
+          },
+          {
+            username: "aux1_angustias",
+            password: hashedPassword,
+            role: "AUXILIAR",
+            email: "angelcardenasrod@gmail.com",
+          },
         ],
       },
     },
   });
-  console.log(`Hermandad creada o verificada: ${angustias.name}`);
 
-  // Crear hermanos para Angustias (si no existen)
   await prisma.hermano.createMany({
-    data: [
-      {
-        hermandadId: angustias.id,
-        numeroAntiguedad: 1,
-        nombre: "Pedro",
-        apellidos: "López",
-        telefono: "600555666",
-        email: "pedro.lopez@example.com",
-        direccion: "Calle Luna 7",
-        fechaNacimiento: new Date("1975-11-02"),
-        fechaAltaHermandad: new Date("1995-04-15"),
-      },
-      {
-        hermandadId: angustias.id,
-        numeroAntiguedad: 2,
-        nombre: "Laura",
-        apellidos: "Martínez",
-        telefono: "600777888",
-        email: "laura.martinez@example.com",
-        direccion: "Plaza Sol 10",
-        fechaNacimiento: new Date("1990-02-18"),
-        fechaAltaHermandad: new Date("2010-08-20"),
-      },
-    ],
+    data: generarHermanos(angustias.id, 100, "Angustias"),
     skipDuplicates: true,
   });
 
-  console.log("Seeding finished!");
+  console.log("✔ 100 hermanos creados para Angustias");
+
+  console.log("✅ Seeding finished!");
 }
 
 main()
