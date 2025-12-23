@@ -16,6 +16,8 @@ model Hermandad {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  hermanos Hermano[]
 }
 
 enum UserRole {
@@ -66,4 +68,23 @@ model PasswordResetToken {
   user   User @relation(fields: [userId], references: [id])
 
   @@index([tokenHash]) // índice para búsquedas por hash
+}
+
+model Hermano {
+  id                 Int       @id @default(autoincrement())
+  hermandad          Hermandad @relation(fields: [hermandadId], references: [id])
+  hermandadId        Int
+  numeroAntiguedad   Int
+  nombre             String
+  apellidos          String
+  telefono           String
+  email              String
+  direccion          String
+  fechaNacimiento    DateTime?
+  fechaAltaHermandad DateTime
+  activo             Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([hermandadId, numeroAntiguedad])
 }
