@@ -19,6 +19,14 @@ const apellidos = [
   "Moreno", "Álvarez", "Muñoz", "Romero", "Navarro",
 ];
 
+function generarDNI(indice: number): string {
+  // Usamos el índice para garantizar DNIs únicos en el seed
+  const numero = 10000000 + indice;
+  const letra = "TRWAGMYFPDXBNJZSQVHLCKE"[numero % 23];
+  return `${numero}${letra}`;
+}
+
+
 function generarHermanos(
   hermandadId: number,
   cantidad: number,
@@ -34,6 +42,7 @@ function generarHermanos(
     hermanos.push({
       hermandadId,
       numeroAntiguedad: i,
+      dni: generarDNI(hermandadId * 1000 + i), // 🔐 DNI único y válido
       nombre,
       apellidos: `${apellido1} ${apellidoHermandad}`,
       telefono: `6${Math.floor(10000000 + Math.random() * 89999999)}`,
@@ -54,6 +63,7 @@ function generarHermanos(
 
   return hermanos;
 }
+
 
 /* ===========================
    Seed principal

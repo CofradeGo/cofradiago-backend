@@ -1,11 +1,26 @@
 import { prisma } from "../config/prismaClient.ts";
 
 interface ListHermanosOptions {
-  hermandadId: number; // se toma del usuario autenticado
+  hermandadId: number;
   page?: number;
   limit?: number;
   order?: "asc" | "desc";
 }
+
+// Helper para calcular edad
+const calcularEdad = (fechaNacimiento: Date | null): number | null => {
+  if (!fechaNacimiento) return null;
+
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+  const m = hoy.getMonth() - fechaNacimiento.getMonth();
+
+  if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+    edad--;
+  }
+
+  return edad;
+};
 
 export const hermanoService = {
   listHermanos: async ({
@@ -14,10 +29,8 @@ export const hermanoService = {
     limit = 20,
     order = "asc",
   }: ListHermanosOptions) => {
-    // Calculamos desde qué registro empezar
     const skip = (page - 1) * limit;
 
-    // Contamos solo los hermanos activos de esta hermandad
     const total = await prisma.hermano.count({
       where: {
         hermandadId,
@@ -25,11 +38,10 @@ export const hermanoService = {
       },
     });
 
-    // Obtenemos los hermanos activos con paginación y ordenación
-    const data = await prisma.hermano.findMany({
+    const hermanos = await prisma.hermano.findMany({
       where: {
         hermandadId,
-        activo: true, // filtramos solo activos
+        activo: true,
       },
       select: {
         numeroAntiguedad: true,
@@ -38,13 +50,30 @@ export const hermanoService = {
         telefono: true,
         direccion: true,
         email: true,
-        // NO devolvemos 'activo', no es necesario en este listado
+        fechaNacimiento: true,
+        dni: true,
       },
       orderBy: { numeroAntiguedad: order },
       skip,
       take: limit,
     });
 
-    return { data, total, page, limit };
+    const data = hermanos.map(h => ({
+      numeroAntiguedad: h.numeroAntiguedad,
+      nombre: h.nombre,
+      apellidos: h.apellidos,
+      telefono: h.telefono,
+      direccion: h.direccion,
+      email: h.email,
+      dni: h.dni,
+      edad: calcularEdad(h.fechaNacimiento),
+    }));
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+    };
   },
 };
