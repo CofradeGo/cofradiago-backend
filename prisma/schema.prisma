@@ -72,19 +72,22 @@ model PasswordResetToken {
 
 model Hermano {
   id                 Int       @id @default(autoincrement())
-  hermandad          Hermandad @relation(fields: [hermandadId], references: [id])
   hermandadId        Int
+  hermandad          Hermandad @relation(fields: [hermandadId], references: [id])
   numeroAntiguedad   Int
   nombre             String
   apellidos          String
   telefono           String
   email              String
   direccion          String
-  fechaNacimiento    DateTime?
+  fechaNacimiento    DateTime? // nullable
   fechaAltaHermandad DateTime
   activo             Boolean   @default(true)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  dni                String?   // 🆕 NUEVO CAMPO
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([hermandadId, numeroAntiguedad])
 }
+
