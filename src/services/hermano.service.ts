@@ -1,10 +1,16 @@
 import { prisma } from "../config/prismaClient.ts";
+import { Prisma } from "@prisma/client";
 
-interface ListHermanosOptions {
+export interface ListHermanosOptions {
   hermandadId: number;
   page?: number;
   limit?: number;
   order?: "asc" | "desc";
+
+  search?: string | undefined;
+  direccion?: string | undefined;
+  numeroAntiguedad?: number | undefined;
+  activo?: boolean | undefined;
 }
 
 // Helper para calcular edad
@@ -28,21 +34,40 @@ export const hermanoService = {
     page = 1,
     limit = 20,
     order = "asc",
+    search,
+    direccion,
+    numeroAntiguedad,
+    activo = true,
   }: ListHermanosOptions) => {
     const skip = (page - 1) * limit;
 
-    const total = await prisma.hermano.count({
-      where: {
-        hermandadId,
-        activo: true,
-      },
-    });
+    const where: Prisma.HermanoWhereInput = {
+      hermandadId,
+      activo,
+    };
+
+    if (numeroAntiguedad !== undefined) {
+      where.numeroAntiguedad = numeroAntiguedad;
+    }
+
+    if (search) {
+      where.OR = [
+        { nombre: { contains: search, mode: "insensitive" } },
+        { apellidos: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (direccion) {
+      where.direccion = {
+        contains: direccion,
+        mode: "insensitive",
+      };
+    }
+
+    const total = await prisma.hermano.count({ where });
 
     const hermanos = await prisma.hermano.findMany({
-      where: {
-        hermandadId,
-        activo: true,
-      },
+      where,
       select: {
         numeroAntiguedad: true,
         nombre: true,
