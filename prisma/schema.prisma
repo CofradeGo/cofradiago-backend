@@ -144,3 +144,5 @@ model Insignia {
 
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
 }
+
+
