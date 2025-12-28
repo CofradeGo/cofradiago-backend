@@ -10,6 +10,7 @@ import hermandadRoutes from "./routes/hermandad.routes.ts";
 import userRoutes from "./routes/user.routes.ts";
 import passwordRoutes from "./routes/password.routes.ts";
 import hermanoRouter from "./routes/hermano.route.ts";
+import cofradiaRouter from "./routes/cofradia.route.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,6 +40,7 @@ app.use("/api/v1/hermandad", hermandadRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/password", passwordRoutes);
 app.use("/api/v1/hermanos", hermanoRouter);
+app.use("/api/v1/cofradia", cofradiaRouter);
 
 // Archivos estáticos
 app.use("/uploads/logos", express.static(path.join(__dirname, "..", "uploads/logos")));
