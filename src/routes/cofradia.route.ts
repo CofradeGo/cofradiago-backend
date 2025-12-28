@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/authMiddleware.ts";
-import { cofradiaController } from "../controllers/cofradia.controller.ts";
+import { crearCofradia, listCofradias } from "../controllers/cofradia.controller.ts";
 
 const router = Router();
 
 // Crear una cofradía (solo DMG)
-router.post("/", authMiddleware, cofradiaController.crearCofradia);
+router.post("/", authMiddleware, crearCofradia);
+router.get("/", authMiddleware, listCofradias);
 
 // Listar cofradías de la hermandad (DMG y AUX pueden consultar)
 // router.get("/", authMiddleware, cofradiaController.listCofradias);
