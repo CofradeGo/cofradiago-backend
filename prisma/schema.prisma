@@ -91,3 +91,56 @@ model Hermano {
   @@unique([hermandadId, numeroAntiguedad])
 }
 
+model Cofradia {
+  id           Int       @id @default(autoincrement())
+  hermandadId  Int
+  nombre       String
+  anio         Int
+  tipo         String
+  estado       CofradiaEstado @default(ABIERTA)
+  cortejos     Cortejo[]
+  puestos      Puesto[]
+  insignias    Insignia[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([hermandadId, nombre, anio])
+}
+
+enum CofradiaEstado {
+  ABIERTA
+  CERRADA
+}
+
+model Cortejo {
+  id          Int      @id @default(autoincrement())
+  cofradiaId  Int
+  nombre      String
+  orden       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
+}
+
+model Puesto {
+  id          Int      @id @default(autoincrement())
+  cofradiaId  Int
+  nombre      String
+  codigo      String? 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
+}
+
+model Insignia {
+  id          Int      @id @default(autoincrement())
+  cofradiaId  Int
+  nombre      String
+  descripcion String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
+}
