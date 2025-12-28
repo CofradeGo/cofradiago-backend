@@ -7,13 +7,17 @@ export interface ListHermanosOptions {
   limit?: number;
   order?: "asc" | "desc";
 
-  search?: string | undefined;
-  direccion?: string | undefined;
-  numeroAntiguedad?: number | undefined;
-  activo?: boolean | undefined;
+  search?: string;
+  direccion?: string;
+  numeroAntiguedad?: number;
+  activo?: boolean;
+
+  // 🆕 Filtro por edad
+  edadMin?: number;
+  edadMax?: number;
 }
 
-// Helper para calcular edad
+// Helper para calcular edad (para respuesta al frontend)
 const calcularEdad = (fechaNacimiento: Date | null): number | null => {
   if (!fechaNacimiento) return null;
 
@@ -28,6 +32,31 @@ const calcularEdad = (fechaNacimiento: Date | null): number | null => {
   return edad;
 };
 
+// Helper para convertir edad → fechaNacimiento (para BD)
+const calcularFechaNacimientoDesdeEdad = (
+  edadMin?: number,
+  edadMax?: number
+): Prisma.DateTimeFilter => {
+  const hoy = new Date();
+
+  return {
+    ...(edadMax !== undefined && {
+      gte: new Date(
+        hoy.getFullYear() - edadMax,
+        hoy.getMonth(),
+        hoy.getDate()
+      ),
+    }),
+    ...(edadMin !== undefined && {
+      lte: new Date(
+        hoy.getFullYear() - edadMin,
+        hoy.getMonth(),
+        hoy.getDate()
+      ),
+    }),
+  };
+};
+
 export const hermanoService = {
   listHermanos: async ({
     hermandadId,
@@ -38,6 +67,8 @@ export const hermanoService = {
     direccion,
     numeroAntiguedad,
     activo = true,
+    edadMin,
+    edadMax,
   }: ListHermanosOptions) => {
     const skip = (page - 1) * limit;
 
@@ -64,6 +95,14 @@ export const hermanoService = {
       };
     }
 
+    // 🆕 Filtro por rango de edad
+    if (edadMin !== undefined || edadMax !== undefined) {
+      where.fechaNacimiento = calcularFechaNacimientoDesdeEdad(
+        edadMin,
+        edadMax
+      );
+    }
+
     const total = await prisma.hermano.count({ where });
 
     const hermanos = await prisma.hermano.findMany({
@@ -78,12 +117,14 @@ export const hermanoService = {
         fechaNacimiento: true,
         dni: true,
       },
-      orderBy: { numeroAntiguedad: order },
+      orderBy: {
+        numeroAntiguedad: order,
+      },
       skip,
       take: limit,
     });
 
-    const data = hermanos.map(h => ({
+    const data = hermanos.map((h) => ({
       numeroAntiguedad: h.numeroAntiguedad,
       nombre: h.nombre,
       apellidos: h.apellidos,
