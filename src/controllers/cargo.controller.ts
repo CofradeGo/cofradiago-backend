@@ -4,30 +4,23 @@ import type { User } from "../models/user.model.ts";
 
 /**
  * POST /api/v1/cofradias/:cofradiaId/cargos
- * @description Crear un nuevo cargo en una cofradía
+ * Crear un nuevo cargo en una cofradía
  */
 export const crearCargo = async (req: Request, res: Response) => {
   try {
     const user = req.user as User | undefined;
 
-    // 🔐 Autenticación
     if (!user) {
-      return res.status(401).json({
-        message: "Usuario no autenticado. Por favor, inicia sesión.",
-      });
+      return res.status(401).json({ message: "Usuario no autenticado. Por favor, inicia sesión." });
     }
 
-    // 🛑 Autorización
     if (user.role !== "DMG") {
-      return res.status(403).json({
-        message: "Acceso denegado. Solo usuarios con rol DMG pueden crear cargos.",
-      });
+      return res.status(403).json({ message: "Acceso denegado. Solo usuarios con rol DMG pueden crear cargos." });
     }
 
     const { cofradiaId } = req.params;
     const { nombre } = req.body;
 
-    // 📥 Validaciones básicas
     if (!cofradiaId || !nombre) {
       return res.status(400).json({
         message: "Datos incompletos: se requiere cofradía y nombre del cargo.",
@@ -47,75 +40,155 @@ export const crearCargo = async (req: Request, res: Response) => {
     if (error instanceof Error) {
       switch (error.message) {
         case "COFRADIA_NOT_FOUND":
-          return res.status(404).json({
-            message: "Cofradía no encontrada",
-          });
+          return res.status(404).json({ message: "Cofradía no encontrada" });
 
         case "COFRADIA_CERRADA":
-          return res.status(400).json({
-            message: "No se pueden crear cargos en cofradías cerradas",
-          });
+          return res.status(400).json({ message: "No se pueden crear cargos en cofradías cerradas" });
 
         default:
           if (error.message.includes("Ya existe un cargo")) {
-            return res.status(409).json({
-              message: error.message,
-            });
+            return res.status(409).json({ message: error.message });
           }
 
           console.error("Error al crear cargo:", error);
-          return res.status(500).json({
-            message: `Error al crear el cargo: ${error.message}`,
-          });
+          return res.status(500).json({ message: `Error al crear el cargo: ${error.message}` });
       }
     }
 
     console.error("Error desconocido al crear cargo:", error);
-    return res.status(500).json({
-      message: "Error desconocido al crear el cargo.",
-    });
+    return res.status(500).json({ message: "Error desconocido al crear el cargo." });
   }
 };
 
 /**
  * GET /api/v1/cofradias/:cofradiaId/cargos
- * @description Listar cargos de una cofradía
+ * Listar cargos de una cofradía
  */
 export const listCargos = async (req: Request, res: Response) => {
   try {
     const user = req.user as User | undefined;
 
-    // 🔐 Autenticación
     if (!user) {
-      return res.status(401).json({
-        message: "Usuario no autenticado. Por favor, inicia sesión.",
-      });
+      return res.status(401).json({ message: "Usuario no autenticado. Por favor, inicia sesión." });
     }
 
     const { cofradiaId } = req.params;
 
     if (!cofradiaId) {
-      return res.status(400).json({
-        message: "Parámetro cofradiaId obligatorio",
-      });
+      return res.status(400).json({ message: "Parámetro cofradiaId obligatorio" });
     }
 
-    const cargos = await cargoService.listCargosByCofradia(
-      Number(cofradiaId)
-    );
+    const cargos = await cargoService.listCargosByCofradia(Number(cofradiaId));
 
     return res.status(200).json(cargos);
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error("Error al listar cargos:", error);
-      return res.status(500).json({
-        message: `Error al listar los cargos: ${error.message}`,
-      });
+      return res.status(500).json({ message: `Error al listar los cargos: ${error.message}` });
     }
 
     console.error("Error desconocido al listar cargos:", error);
-    return res.status(500).json({
-      message: "Error desconocido al listar los cargos.",
+    return res.status(500).json({ message: "Error desconocido al listar los cargos." });
+  }
+};
+
+/**
+ * PUT /api/v1/cofradias/:cofradiaId/cargos/:cargoId
+ * Editar un cargo
+ */
+export const editarCargo = async (req: Request, res: Response) => {
+  try {
+    const user = req.user as User | undefined;
+    const { cargoId } = req.params;
+    const { nombre } = req.body;
+
+    if (!user) {
+      return res.status(401).json({ message: "Usuario no autenticado. Por favor, inicia sesión." });
+    }
+
+    if (user.role !== "DMG") {
+      return res.status(403).json({ message: "Acceso denegado. Solo usuarios con rol DMG pueden editar cargos." });
+    }
+
+    if (!cargoId || !nombre) {
+      return res.status(400).json({ message: "Datos incompletos: se requiere cargo y nombre." });
+    }
+
+    const cargo = await cargoService.editarCargo({
+      cargoId: Number(cargoId),
+      nombre,
     });
+
+    return res.status(200).json({
+      message: `Cargo "${cargo.nombre}" actualizado correctamente.`,
+      cargo,
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      switch (error.message) {
+        case "CARGO_NOT_FOUND":
+          return res.status(404).json({ message: "Cargo no encontrado" });
+
+        case "COFRADIA_CERRADA":
+          return res.status(400).json({ message: "No se pueden editar cargos en cofradías cerradas" });
+
+        default:
+          if (error.message.includes("Ya existe un cargo")) {
+            return res.status(409).json({ message: error.message });
+          }
+
+          console.error("Error al editar cargo:", error);
+          return res.status(500).json({ message: `Error al editar el cargo: ${error.message}` });
+      }
+    }
+
+    console.error("Error desconocido al editar cargo:", error);
+    return res.status(500).json({ message: "Error desconocido al editar el cargo." });
+  }
+};
+
+/**
+ * DELETE /api/v1/cofradias/:cofradiaId/cargos/:cargoId
+ * Borrar un cargo
+ */
+export const borrarCargo = async (req: Request, res: Response) => {
+  try {
+    const user = req.user as User | undefined;
+    const { cargoId } = req.params;
+
+    if (!user) {
+      return res.status(401).json({ message: "Usuario no autenticado. Por favor, inicia sesión." });
+    }
+
+    if (user.role !== "DMG") {
+      return res.status(403).json({ message: "Acceso denegado. Solo usuarios con rol DMG pueden borrar cargos." });
+    }
+
+    if (!cargoId) {
+      return res.status(400).json({ message: "Parámetro cargoId obligatorio." });
+    }
+
+    await cargoService.borrarCargo(Number(cargoId));
+
+    return res.status(200).json({
+      message: "Cargo eliminado correctamente.",
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      switch (error.message) {
+        case "CARGO_NOT_FOUND":
+          return res.status(404).json({ message: "Cargo no encontrado" });
+
+        case "COFRADIA_CERRADA":
+          return res.status(400).json({ message: "No se pueden borrar cargos en cofradías cerradas" });
+
+        default:
+          console.error("Error al borrar cargo:", error);
+          return res.status(500).json({ message: `Error al borrar el cargo: ${error.message}` });
+      }
+    }
+
+    console.error("Error desconocido al borrar cargo:", error);
+    return res.status(500).json({ message: "Error desconocido al borrar el cargo." });
   }
 };

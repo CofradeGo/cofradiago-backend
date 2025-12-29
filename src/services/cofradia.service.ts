@@ -8,70 +8,84 @@ export interface CrearCofradiaInput {
   tipo: string;
 }
 
+// Input para actualizar cofradía
+export interface ActualizarCofradiaInput {
+  nombre?: string;
+  anio?: number;
+  tipo?: string;
+}
+
 // Opciones para listar cofradías
 export interface ListCofradiasOptions {
   hermandadId: number;
   order?: "asc" | "desc";
-  estado?: "ABIERTA" | "CERRADA" | undefined; // <-- Permite undefined
+  estado?: "ABIERTA" | "CERRADA" | undefined;
 }
 
 export const cofradiaService = {
-  // Crear cofradía
   crearCofradia: async ({ hermandadId, nombre, anio, tipo }: CrearCofradiaInput) => {
-    // Verificar que no exista otra cofradía con el mismo nombre y año en esta hermandad
     const existe = await prisma.cofradia.findUnique({
-      where: {
-        hermandadId_nombre_anio: {
-          hermandadId,
-          nombre,
-          anio,
-        },
-      },
+      where: { hermandadId_nombre_anio: { hermandadId, nombre, anio } },
     });
 
     if (existe) {
       throw new Error(`Ya existe una cofradía con nombre "${nombre}" y año ${anio} en esta hermandad`);
     }
 
-    // Crear la cofradía en estado ABIERTA por defecto
     const cofradia = await prisma.cofradia.create({
-      data: {
-        hermandadId,
-        nombre,
-        anio,
-        tipo,
-        estado: "ABIERTA",
-      },
+      data: { hermandadId, nombre, anio, tipo, estado: "ABIERTA" },
     });
 
     return cofradia;
   },
 
-  // Listar cofradías
   listCofradias: async ({ hermandadId, order = "desc", estado }: ListCofradiasOptions) => {
     try {
-      // Construimos el filtro
       const where: { hermandadId: number; estado?: "ABIERTA" | "CERRADA" } = { hermandadId };
-      if (estado) {
-        where.estado = estado;
-      }
+      if (estado) where.estado = estado;
 
-      const cofradias = await prisma.cofradia.findMany({
+      return await prisma.cofradia.findMany({
         where,
-        select: {
-          id: true,
-          nombre: true,
-          anio: true,
-          tipo: true,
-          estado: true,
-        },
+        select: { id: true, nombre: true, anio: true, tipo: true, estado: true },
         orderBy: { anio: order },
       });
-
-      return cofradias;
     } catch (error) {
       console.error("Error en cofradiaService.listCofradias:", error);
       throw new Error("No se pudieron listar las cofradías");
     }
+  },
+
+  actualizarCofradia: async (cofradiaId: number, data: ActualizarCofradiaInput) => {
+    const cofradia = await prisma.cofradia.findUnique({ where: { id: cofradiaId } });
+    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
+    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
+
+    // Validar unicidad si se cambia nombre y año
+    if ((data.nombre && data.anio) && 
+        (data.nombre !== cofradia.nombre || data.anio !== cofradia.anio)) {
+      const existe = await prisma.cofradia.findUnique({
+        where: { hermandadId_nombre_anio: { hermandadId: cofradia.hermandadId, nombre: data.nombre, anio: data.anio } },
+      });
+      if (existe) throw new Error(`Ya existe una cofradía con nombre "${data.nombre}" y año ${data.anio}`);
+    }
+
+    return await prisma.cofradia.update({ where: { id: cofradiaId }, data });
+  },
+
+  borrarCofradia: async (cofradiaId: number) => {
+    const cofradia = await prisma.cofradia.findUnique({ where: { id: cofradiaId } });
+    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
+    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
+
+    // Borrar todo lo relacionado (cortejos, puestos, cargos, insignias)
+    await prisma.$transaction([
+      prisma.cortejo.deleteMany({ where: { cofradiaId } }),
+      prisma.puesto.deleteMany({ where: { cofradiaId } }),
+      prisma.cargo.deleteMany({ where: { cofradiaId } }),
+      prisma.insignia.deleteMany({ where: { cofradiaId } }),
+      prisma.cofradia.delete({ where: { id: cofradiaId } }),
+    ]);
+
+    return { message: "Cofradía y todos sus elementos relacionados borrados correctamente" };
   },
 };
