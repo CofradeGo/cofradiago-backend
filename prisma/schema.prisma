@@ -105,6 +105,7 @@ model Cofradia {
   updatedAt    DateTime @updatedAt
 
   @@unique([hermandadId, nombre, anio])
+  cargos Cargo[]
 }
 
 enum CofradiaEstado {
@@ -150,4 +151,15 @@ model Insignia {
 }
 
 
+model Cargo {
+  id          Int      @id @default(autoincrement())
+  cofradiaId  Int
+  nombre      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
+
+  @@unique([cofradiaId, nombre])
+}
 
