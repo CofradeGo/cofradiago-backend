@@ -13,6 +13,7 @@ import hermanoRouter from "./routes/hermano.route.ts";
 import cofradiaRouter from "./routes/cofradia.route.ts";
 import cortejosRouter from "./routes/cortejo.route.ts";
 import puestoRouter from "./routes/puesto.route.ts";
+import insigniaRouter from "./routes/insignia.route.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +46,7 @@ app.use("/api/v1/hermanos", hermanoRouter);
 app.use("/api/v1/cofradia", cofradiaRouter);
 app.use("/api/v1/cofradias/:cofradiaId/cortejos", cortejosRouter);
 app.use("/api/v1/cofradias", puestoRouter);
+app.use("/api/v1/cofradias", insigniaRouter);
 
 // Archivos estáticos
 app.use("/uploads/logos", express.static(path.join(__dirname, "..", "uploads/logos")));

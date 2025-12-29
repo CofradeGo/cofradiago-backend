@@ -121,6 +121,8 @@ model Cortejo {
   updatedAt   DateTime @updatedAt
 
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
+
+  insignias Insignia[]
 }
 
 model Puesto {
@@ -137,12 +139,15 @@ model Puesto {
 model Insignia {
   id          Int      @id @default(autoincrement())
   cofradiaId  Int
+  cortejoId   Int?     // Opcional si quieres permitir que no esté asignada aún a un cortejo
   nombre      String
   descripcion String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
+  cortejo     Cortejo? @relation(fields: [cortejoId], references: [id])
 }
+
 
 
