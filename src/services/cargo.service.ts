@@ -5,6 +5,11 @@ interface CrearCargoInput {
   nombre: string;
 }
 
+interface EditarCargoInput {
+  cargoId: number;
+  nombre: string;
+}
+
 export const cargoService = {
   /**
    * Crear un cargo en una cofradía
@@ -25,7 +30,7 @@ export const cargoService = {
         throw new Error("COFRADIA_CERRADA");
       }
 
-      // 3️⃣ Comprobar que no existe ya un cargo con el mismo nombre
+      // 3️⃣ Comprobar duplicado
       const existe = await prisma.cargo.findFirst({
         where: {
           cofradiaId,
@@ -34,20 +39,16 @@ export const cargoService = {
       });
 
       if (existe) {
-        throw new Error(
-          `Ya existe un cargo con nombre "${nombre}" en esta cofradía`
-        );
+        throw new Error(`Ya existe un cargo con nombre "${nombre}" en esta cofradía`);
       }
 
-      // 4️⃣ Crear el cargo
-      const cargo = await prisma.cargo.create({
+      // 4️⃣ Crear cargo
+      return await prisma.cargo.create({
         data: {
           cofradiaId,
           nombre,
         },
       });
-
-      return cargo;
     } catch (error) {
       console.error("Error en cargoService.crearCargo:", error);
       throw error;
@@ -66,6 +67,80 @@ export const cargoService = {
     } catch (error) {
       console.error("Error en cargoService.listCargosByCofradia:", error);
       throw new Error("No se pudieron listar los cargos");
+    }
+  },
+
+  /**
+   * Editar un cargo
+   */
+  editarCargo: async ({ cargoId, nombre }: EditarCargoInput) => {
+    try {
+      // 1️⃣ Buscar cargo con su cofradía
+      const cargo = await prisma.cargo.findUnique({
+        where: { id: cargoId },
+        include: { cofradia: true },
+      });
+
+      if (!cargo) {
+        throw new Error("CARGO_NOT_FOUND");
+      }
+
+      // 2️⃣ Cofradía abierta
+      if (cargo.cofradia.estado !== "ABIERTA") {
+        throw new Error("COFRADIA_CERRADA");
+      }
+
+      // 3️⃣ Comprobar duplicado
+      const existe = await prisma.cargo.findFirst({
+        where: {
+          cofradiaId: cargo.cofradiaId,
+          nombre,
+          NOT: { id: cargoId },
+        },
+      });
+
+      if (existe) {
+        throw new Error(`Ya existe un cargo con nombre "${nombre}" en esta cofradía`);
+      }
+
+      // 4️⃣ Actualizar
+      return await prisma.cargo.update({
+        where: { id: cargoId },
+        data: { nombre },
+      });
+    } catch (error) {
+      console.error("Error en cargoService.editarCargo:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Borrar un cargo
+   */
+  borrarCargo: async (cargoId: number) => {
+    try {
+      // 1️⃣ Buscar cargo + cofradía
+      const cargo = await prisma.cargo.findUnique({
+        where: { id: cargoId },
+        include: { cofradia: true },
+      });
+
+      if (!cargo) {
+        throw new Error("CARGO_NOT_FOUND");
+      }
+
+      // 2️⃣ Cofradía abierta
+      if (cargo.cofradia.estado !== "ABIERTA") {
+        throw new Error("COFRADIA_CERRADA");
+      }
+
+      // 3️⃣ Borrar
+      await prisma.cargo.delete({
+        where: { id: cargoId },
+      });
+    } catch (error) {
+      console.error("Error en cargoService.borrarCargo:", error);
+      throw error;
     }
   },
 };

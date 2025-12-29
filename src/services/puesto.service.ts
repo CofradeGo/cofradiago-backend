@@ -3,48 +3,138 @@ import { prisma } from "../config/prismaClient.ts";
 interface CrearPuestoInput {
   cofradiaId: number;
   nombre: string;
-  codigo?: string; // Opcional
+  codigo?: string;
+}
+
+interface EditarPuestoInput {
+  nombre?: string;
+  codigo?: string;
 }
 
 export const puestoService = {
+  /* =====================================================
+     CREAR PUESTO
+  ===================================================== */
   crearPuesto: async ({ cofradiaId, nombre, codigo }: CrearPuestoInput) => {
-    try {
-      // 1. Comprobar que la cofradía existe
-      const cofradia = await prisma.cofradia.findUnique({ where: { id: cofradiaId } });
-      if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
+    // 1️⃣ Validar cofradía
+    const cofradia = await prisma.cofradia.findUnique({
+      where: { id: cofradiaId },
+    });
 
-      // 2. Comprobar que está ABIERTA
-      if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
+    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
+    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
 
-      // 3. Comprobar que no existe ya un puesto con el mismo nombre en la cofradía
-      const existe = await prisma.puesto.findFirst({ where: { cofradiaId, nombre } });
-      if (existe) throw new Error(`Ya existe un puesto con nombre "${nombre}" en esta cofradía`);
+    // 2️⃣ Evitar duplicados
+    const existe = await prisma.puesto.findFirst({
+      where: { cofradiaId, nombre },
+    });
 
-      // 4. Crear el puesto
-      const puesto = await prisma.puesto.create({
-        data: {
-          cofradiaId,
-          nombre,
-          codigo: codigo ?? null, // opcional
+    if (existe) {
+      throw new Error(
+        `Ya existe un puesto con nombre "${nombre}" en esta cofradía`
+      );
+    }
+
+    // 3️⃣ Construcción segura del data
+    const data: {
+      cofradiaId: number;
+      nombre: string;
+      codigo?: string | null;
+    } = {
+      cofradiaId,
+      nombre,
+    };
+
+    if (codigo !== undefined) {
+      data.codigo = codigo;
+    }
+
+    return prisma.puesto.create({ data });
+  },
+
+  /* =====================================================
+     LISTAR PUESTOS
+  ===================================================== */
+  listPuestosByCofradia: async (cofradiaId: number) => {
+    return prisma.puesto.findMany({
+      where: { cofradiaId },
+      orderBy: { nombre: "asc" },
+    });
+  },
+
+  /* =====================================================
+     EDITAR PUESTO
+  ===================================================== */
+  editarPuesto: async (puestoId: number, input: EditarPuestoInput) => {
+    const puesto = await prisma.puesto.findUnique({
+      where: { id: puestoId },
+    });
+
+    if (!puesto) throw new Error("PUESTO_NOT_FOUND");
+
+    const cofradia = await prisma.cofradia.findUnique({
+      where: { id: puesto.cofradiaId },
+    });
+
+    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
+    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
+
+    // Evitar duplicados de nombre
+    if (input.nombre !== undefined) {
+      const existe = await prisma.puesto.findFirst({
+        where: {
+          cofradiaId: puesto.cofradiaId,
+          nombre: input.nombre,
+          NOT: { id: puestoId },
         },
       });
 
-      return puesto;
-    } catch (error) {
-      console.error("Error en puestoService.crearPuesto:", error);
-      throw error;
+      if (existe) {
+        throw new Error(
+          `Ya existe un puesto con nombre "${input.nombre}" en esta cofradía`
+        );
+      }
     }
+
+    // Construcción segura del update
+    const data: {
+      nombre?: string;
+      codigo?: string | null;
+    } = {};
+
+    if (input.nombre !== undefined) {
+      data.nombre = input.nombre;
+    }
+
+    if (input.codigo !== undefined) {
+      data.codigo = input.codigo;
+    }
+
+    return prisma.puesto.update({
+      where: { id: puestoId },
+      data,
+    });
   },
 
-  listPuestosByCofradia: async (cofradiaId: number) => {
-    try {
-      return await prisma.puesto.findMany({
-        where: { cofradiaId },
-        orderBy: { nombre: "asc" },
-      });
-    } catch (error) {
-      console.error("Error en puestoService.listPuestosByCofradia:", error);
-      throw new Error("No se pudieron listar los puestos");
-    }
+  /* =====================================================
+     BORRAR PUESTO
+  ===================================================== */
+  borrarPuesto: async (puestoId: number) => {
+    const puesto = await prisma.puesto.findUnique({
+      where: { id: puestoId },
+    });
+
+    if (!puesto) throw new Error("PUESTO_NOT_FOUND");
+
+    const cofradia = await prisma.cofradia.findUnique({
+      where: { id: puesto.cofradiaId },
+    });
+
+    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
+    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
+
+    return prisma.puesto.delete({
+      where: { id: puestoId },
+    });
   },
 };
