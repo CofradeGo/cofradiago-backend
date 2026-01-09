@@ -5,6 +5,7 @@ import {
   listCofradias,
   actualizarCofradia,
   borrarCofradia,
+  clonarCofradia,
 } from "../controllers/cofradia.controller.ts";
 
 const router = Router();
@@ -20,5 +21,8 @@ router.put("/:cofradiaId", authMiddleware, actualizarCofradia);
 
 // Borrar cofradía por ID (solo DMG, solo si está ABIERTA)
 router.delete("/:cofradiaId", authMiddleware, borrarCofradia);
+
+// Clonar cofradía por ID (solo DMG)
+router.post("/:cofradiaId/clonar", authMiddleware, clonarCofradia);
 
 export default router;
