@@ -83,35 +83,41 @@ export const cofradiaService = {
     cofradiaId: number,
     data: ActualizarCofradiaInput
   ) => {
-    const cofradia = await prisma.cofradia.findUnique({
-      where: { id: cofradiaId },
-    });
+    const cofradia = await prisma.cofradia.findUnique({ where: { id: cofradiaId } });
     if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
     if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
 
+    // ✅ Filtramos datos válidos nuevamente
+    const updateData: ActualizarCofradiaInput = {};
+    if (data.nombre && data.nombre.trim() !== "") updateData.nombre = data.nombre.trim();
+    if (data.anio !== undefined && data.anio !== null) updateData.anio = data.anio;
+    if (data.tipo && data.tipo.trim() !== "") updateData.tipo = data.tipo.trim();
+
+    if (Object.keys(updateData).length === 0) {
+      throw new Error("NO_VALID_FIELDS"); // nadie debería llegar aquí, pero refuerzo seguridad
+    }
+
     // Validar unicidad si se cambia nombre y año
     if (
-      data.nombre &&
-      data.anio &&
-      (data.nombre !== cofradia.nombre || data.anio !== cofradia.anio)
+      updateData.nombre &&
+      updateData.anio &&
+      (updateData.nombre !== cofradia.nombre || updateData.anio !== cofradia.anio)
     ) {
       const existe = await prisma.cofradia.findUnique({
         where: {
           hermandadId_nombre_anio: {
             hermandadId: cofradia.hermandadId,
-            nombre: data.nombre,
-            anio: data.anio,
+            nombre: updateData.nombre,
+            anio: updateData.anio,
           },
         },
       });
-      if (existe)
-        throw new Error(
-          `Ya existe una cofradía con nombre "${data.nombre}" y año ${data.anio}`
-        );
+      if (existe) throw new Error(`Ya existe una cofradía con nombre "${updateData.nombre}" y año ${updateData.anio}`);
     }
 
-    return await prisma.cofradia.update({ where: { id: cofradiaId }, data });
+    return await prisma.cofradia.update({ where: { id: cofradiaId }, data: updateData });
   },
+
 
   borrarCofradia: async (cofradiaId: number) => {
     return prisma.$transaction(async (tx) => {

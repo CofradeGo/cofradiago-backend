@@ -55,9 +55,6 @@ export const listCofradias = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * PUT /api/v1/cofradias/:cofradiaId
- */
 export const actualizarCofradia = async (req: Request, res: Response) => {
   try {
     const user = req.user as User | undefined;
@@ -69,7 +66,17 @@ export const actualizarCofradia = async (req: Request, res: Response) => {
 
     if (!cofradiaId) return res.status(400).json({ message: "Parámetro cofradía obligatorio" });
 
-    const cofradia = await cofradiaService.actualizarCofradia(Number(cofradiaId), data);
+    // ✅ Filtramos solo campos válidos
+    const validData: ActualizarCofradiaInput = {};
+    if (data.nombre && data.nombre.trim() !== "") validData.nombre = data.nombre.trim();
+    if (data.anio !== undefined && data.anio !== null) validData.anio = data.anio;
+    if (data.tipo && data.tipo.trim() !== "") validData.tipo = data.tipo.trim();
+
+    if (Object.keys(validData).length === 0) {
+      return res.status(400).json({ message: "Debe enviar al menos un campo válido para actualizar" });
+    }
+
+    const cofradia = await cofradiaService.actualizarCofradia(Number(cofradiaId), validData);
     return res.status(200).json({ message: "Cofradía actualizada correctamente", cofradia });
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -86,6 +93,8 @@ export const actualizarCofradia = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error desconocido al actualizar la cofradía" });
   }
 };
+
+
 
 // POST /api/v1/cofradias/:id/clone
 export const clonarCofradia = async (req: Request, res: Response) => {
