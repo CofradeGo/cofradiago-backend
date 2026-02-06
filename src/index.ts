@@ -15,6 +15,8 @@ import cortejosRouter from "./routes/cortejo.route.ts";
 import puestoRouter from "./routes/puesto.route.ts";
 import insigniaRouter from "./routes/insignia.route.ts";
 import cargoRouter from "./routes/cargo.route.ts";
+import insigniaElementoRouter from "./routes/insigniaElemento.route.ts";
+import tramoRouter from "./routes/tramo.route.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,10 +47,15 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/password", passwordRoutes);
 app.use("/api/v1/hermanos", hermanoRouter);
 app.use("/api/v1/cofradia", cofradiaRouter);
+
 app.use("/api/v1/cofradias/:cofradiaId/cortejos", cortejosRouter);
+app.use("/api/v1/cofradias/:cofradiaId/cortejos", tramoRouter);
+
 app.use("/api/v1/cofradias", puestoRouter);
 app.use("/api/v1/cofradias", insigniaRouter);
 app.use("/api/v1/cofradias", cargoRouter);
+app.use("/api/v1/cofradias", insigniaElementoRouter);
+
 
 // Archivos estáticos
 app.use("/uploads/logos", express.static(path.join(__dirname, "..", "uploads/logos")));
