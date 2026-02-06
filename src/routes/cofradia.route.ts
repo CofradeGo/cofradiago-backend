@@ -6,12 +6,16 @@ import {
   actualizarCofradia,
   borrarCofradia,
   clonarCofradia,
+  crearFullCofradia,
 } from "../controllers/cofradia.controller.ts";
 
 const router = Router();
 
 // Crear una cofradía (solo DMG)
 router.post("/", authMiddleware, crearCofradia);
+
+// Crear una cofradía completa con todos sus elementos (solo DMG)
+router.post("/full", authMiddleware, crearFullCofradia);
 
 // Listar cofradías de la hermandad (DMG y AUX pueden consultar)
 router.get("/", authMiddleware, listCofradias);
