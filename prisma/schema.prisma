@@ -106,6 +106,7 @@ model Cofradia {
 
   @@unique([hermandadId, nombre, anio])
   cargos Cargo[]
+  tramos Tramo[]
 }
 
 enum CofradiaEstado {
@@ -124,6 +125,8 @@ model Cortejo {
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
 
   insignias Insignia[]
+
+  tramos Tramo[]
 }
 
 model Puesto {
@@ -140,15 +143,42 @@ model Puesto {
 model Insignia {
   id          Int      @id @default(autoincrement())
   cofradiaId  Int
-  cortejoId   Int?     // Opcional si quieres permitir que no esté asignada aún a un cortejo
   nombre      String
   descripcion String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
-  cortejo     Cortejo? @relation(fields: [cortejoId], references: [id])
+  elementos   InsigniaElemento[]
+
+  @@unique([cofradiaId, nombre])
+  cortejos Cortejo[]
 }
+
+model InsigniaElemento {
+  id         Int      @id @default(autoincrement())
+  insigniaId Int
+  tipo       String   // "vara", "farol", "otro"
+  cantidad   Int      @default(1)
+
+  insignia   Insignia @relation(fields: [insigniaId], references: [id])
+}
+
+model Tramo {
+  id          Int       @id @default(autoincrement())
+  cofradiaId  Int
+  cortejoId   Int
+  nombre      String
+  orden       Int       // Para saber qué tramo va primero
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  cofradia    Cofradia  @relation(fields: [cofradiaId], references: [id])
+  cortejo     Cortejo   @relation(fields: [cortejoId], references: [id])
+  // Aquí más relaciones si luego asignamos cargos o insignias
+}
+
+
 
 
 model Cargo {

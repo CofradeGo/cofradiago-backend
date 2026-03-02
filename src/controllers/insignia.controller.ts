@@ -5,7 +5,6 @@ import type { User } from "../models/user.model.ts";
 /* =====================================================
    TIPOS DE BODY
 ===================================================== */
-
 interface CrearInsigniaBody {
   nombre: string;
   descripcion?: string;
@@ -21,48 +20,31 @@ interface EditarInsigniaBody {
 /* =====================================================
    CREAR INSIGNIA
 ===================================================== */
-
 export const crearInsignia = async (req: Request, res: Response) => {
   try {
     const user = req.user as User | undefined;
-    if (!user) {
+    if (!user)
       return res.status(401).json({ message: "Usuario no autenticado." });
-    }
 
-    if (user.role !== "DMG") {
-      return res.status(403).json({
-        message: "Solo usuarios con rol DMG pueden crear insignias.",
-      });
-    }
+    if (user.role !== "DMG")
+      return res
+        .status(403)
+        .json({ message: "Solo usuarios con rol DMG pueden crear insignias." });
 
     const { cofradiaId } = req.params;
-    const { nombre, descripcion, cortejoId } =
-      req.body as CrearInsigniaBody;
+    if (!cofradiaId)
+      return res.status(400).json({ message: "cofradiaId es obligatorio." });
 
-    if (!cofradiaId || !nombre) {
-      return res.status(400).json({
-        message: "Parámetros obligatorios: cofradiaId y nombre.",
-      });
-    }
+    const { nombre, descripcion, cortejoId } = req.body as CrearInsigniaBody;
+    if (!nombre)
+      return res.status(400).json({ message: "nombre es obligatorio." });
 
-    // 🔹 Construcción segura del input
-    const input: {
-      cofradiaId: number;
-      nombre: string;
-      descripcion?: string;
-      cortejoId?: number;
-    } = {
+    const input = {
       cofradiaId: Number(cofradiaId),
       nombre,
+      ...(descripcion !== undefined && { descripcion }),
+      ...(cortejoId !== undefined && { cortejoId }),
     };
-
-    if (descripcion !== undefined) {
-      input.descripcion = descripcion;
-    }
-
-    if (cortejoId !== undefined) {
-      input.cortejoId = Number(cortejoId);
-    }
 
     const insignia = await insigniaService.crearInsignia(input);
 
@@ -75,115 +57,85 @@ export const crearInsignia = async (req: Request, res: Response) => {
       switch (error.message) {
         case "COFRADIA_NOT_FOUND":
           return res.status(404).json({ message: "Cofradía no encontrada." });
-
         case "COFRADIA_CERRADA":
           return res.status(400).json({
             message: "No se pueden crear insignias en cofradías cerradas.",
           });
-
         case "CORTEJO_NOT_FOUND":
           return res.status(404).json({ message: "Cortejo no encontrado." });
-
         case "CORTEJO_NOT_BELONG_TO_COFRADIA":
           return res.status(400).json({
             message: "El cortejo no pertenece a esta cofradía.",
           });
-
         default:
           if (error.message.includes("Ya existe una insignia")) {
             return res.status(409).json({ message: error.message });
           }
       }
     }
-
     console.error("Error al crear insignia:", error);
-    return res.status(500).json({
-      message: "Error interno al crear la insignia.",
-    });
+    return res
+      .status(500)
+      .json({ message: "Error interno al crear la insignia." });
   }
 };
 
 /* =====================================================
    LISTAR INSIGNIAS
 ===================================================== */
-
 export const listInsignias = async (req: Request, res: Response) => {
   try {
     const user = req.user as User | undefined;
-    if (!user) {
+    if (!user)
       return res.status(401).json({ message: "Usuario no autenticado." });
-    }
 
     const { cofradiaId } = req.params;
-    if (!cofradiaId) {
-      return res.status(400).json({
-        message: "Parámetro cofradiaId obligatorio.",
-      });
-    }
+    if (!cofradiaId)
+      return res.status(400).json({ message: "cofradiaId es obligatorio." });
 
     const insignias = await insigniaService.listInsigniasByCofradia(
       Number(cofradiaId)
     );
 
     return res.status(200).json(insignias);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error al listar insignias:", error);
-    return res.status(500).json({
-      message: "Error al listar las insignias.",
-    });
+    return res
+      .status(500)
+      .json({ message: "Error interno al listar las insignias." });
   }
 };
 
 /* =====================================================
    EDITAR INSIGNIA
 ===================================================== */
-
 export const editarInsignia = async (req: Request, res: Response) => {
   try {
     const user = req.user as User | undefined;
-    if (!user) {
+    if (!user)
       return res.status(401).json({ message: "Usuario no autenticado." });
-    }
 
-    if (user.role !== "DMG") {
+    if (user.role !== "DMG")
       return res.status(403).json({
-        message: "Solo usuarios DMG pueden editar insignias.",
+        message: "Solo usuarios con rol DMG pueden editar insignias.",
       });
-    }
 
     const { cofradiaId, insigniaId } = req.params;
-    const { nombre, descripcion, cortejoId } =
-      req.body as EditarInsigniaBody;
-
-    if (!cofradiaId || !insigniaId) {
+    if (!cofradiaId || !insigniaId)
       return res.status(400).json({
         message: "cofradiaId e insigniaId son obligatorios.",
       });
-    }
 
-    const input: {
-      cofradiaId: number;
-      insigniaId: number;
-      nombre?: string;
-      descripcion?: string;
-      cortejoId?: number | null;
-    } = {
+    const { nombre, descripcion, cortejoId } =
+      req.body as EditarInsigniaBody;
+
+    const input = {
       cofradiaId: Number(cofradiaId),
       insigniaId: Number(insigniaId),
+      ...(nombre !== undefined && { nombre }),
+      ...(descripcion !== undefined && { descripcion }),
+      ...(cortejoId !== undefined && { cortejoId }),
     };
-
-    if (nombre !== undefined) {
-      input.nombre = nombre;
-    }
-
-    if (descripcion !== undefined) {
-      input.descripcion = descripcion;
-    }
-
-    if (cortejoId !== undefined) {
-      input.cortejoId =
-        cortejoId === null ? null : Number(cortejoId);
-    }
 
     const insignia = await insigniaService.editarInsignia(input);
 
@@ -196,50 +148,42 @@ export const editarInsignia = async (req: Request, res: Response) => {
       switch (error.message) {
         case "INSIGNIA_NOT_FOUND":
           return res.status(404).json({ message: "Insignia no encontrada." });
-
         case "INSIGNIA_NOT_BELONG_TO_COFRADIA":
           return res.status(400).json({
             message: "La insignia no pertenece a esta cofradía.",
           });
-
         case "COFRADIA_CERRADA":
           return res.status(400).json({
             message: "No se pueden editar insignias en cofradías cerradas.",
           });
       }
     }
-
     console.error("Error al editar insignia:", error);
-    return res.status(500).json({
-      message: "Error interno al editar la insignia.",
-    });
+    return res
+      .status(500)
+      .json({ message: "Error interno al editar la insignia." });
   }
 };
 
 /* =====================================================
    BORRAR INSIGNIA
 ===================================================== */
-
 export const borrarInsignia = async (req: Request, res: Response) => {
   try {
     const user = req.user as User | undefined;
-    if (!user) {
+    if (!user)
       return res.status(401).json({ message: "Usuario no autenticado." });
-    }
 
-    if (user.role !== "DMG") {
+    if (user.role !== "DMG")
       return res.status(403).json({
-        message: "Solo usuarios DMG pueden borrar insignias.",
+        message: "Solo usuarios con rol DMG pueden borrar insignias.",
       });
-    }
 
     const { cofradiaId, insigniaId } = req.params;
-
-    if (!cofradiaId || !insigniaId) {
+    if (!cofradiaId || !insigniaId)
       return res.status(400).json({
         message: "cofradiaId e insigniaId son obligatorios.",
       });
-    }
 
     await insigniaService.borrarInsignia(
       Number(cofradiaId),
@@ -254,22 +198,19 @@ export const borrarInsignia = async (req: Request, res: Response) => {
       switch (error.message) {
         case "INSIGNIA_NOT_FOUND":
           return res.status(404).json({ message: "Insignia no encontrada." });
-
         case "INSIGNIA_NOT_BELONG_TO_COFRADIA":
           return res.status(400).json({
             message: "La insignia no pertenece a esta cofradía.",
           });
-
         case "COFRADIA_CERRADA":
           return res.status(400).json({
             message: "No se pueden borrar insignias en cofradías cerradas.",
           });
       }
     }
-
     console.error("Error al borrar insignia:", error);
-    return res.status(500).json({
-      message: "Error interno al borrar la insignia.",
-    });
+    return res
+      .status(500)
+      .json({ message: "Error interno al borrar la insignia." });
   }
 };

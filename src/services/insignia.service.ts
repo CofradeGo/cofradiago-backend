@@ -1,4 +1,5 @@
 import { prisma } from "../config/prismaClient.ts";
+import type { Insignia, Prisma } from "@prisma/client";
 
 interface CrearInsigniaInput {
   cofradiaId: number;
@@ -15,16 +16,44 @@ interface EditarInsigniaInput {
   cortejoId?: number | null;
 }
 
+/* =====================================================
+   HELPERS
+===================================================== */
+
+const validateCortejoBelongsToCofradia = async (
+  cortejoId?: number,
+  cofradiaId?: number
+) => {
+  if (!cortejoId) return;
+
+  const cortejo = await prisma.cortejo.findUnique({
+    where: { id: cortejoId },
+  });
+
+  if (!cortejo) throw new Error("CORTEJO_NOT_FOUND");
+  if (cortejo.cofradiaId !== cofradiaId)
+    throw new Error("CORTEJO_NOT_BELONG_TO_COFRADIA");
+};
+
+const buildCortejosUpdate = (cortejoId: number | null) => {
+  if (cortejoId === null) {
+    return { set: [] };
+  }
+
+  return { connect: { id: cortejoId } };
+};
+
+/* =====================================================
+   SERVICE
+===================================================== */
+
 export const insigniaService = {
-  /**
-   * Crear insignia
-   */
   crearInsignia: async ({
     cofradiaId,
     cortejoId,
     nombre,
     descripcion,
-  }: CrearInsigniaInput) => {
+  }: CrearInsigniaInput): Promise<Insignia> => {
     const cofradia = await prisma.cofradia.findUnique({
       where: { id: cofradiaId },
     });
@@ -36,61 +65,48 @@ export const insigniaService = {
       where: { cofradiaId, nombre },
     });
 
-    if (existe) {
-      throw new Error(
-        `Ya existe una insignia con nombre "${nombre}" en esta cofradía`
-      );
-    }
+    if (existe)
+      throw new Error(`Ya existe una insignia con nombre "${nombre}"`);
 
-    if (cortejoId !== undefined) {
-      const cortejo = await prisma.cortejo.findUnique({
-        where: { id: cortejoId },
-      });
-
-      if (!cortejo) throw new Error("CORTEJO_NOT_FOUND");
-      if (cortejo.cofradiaId !== cofradiaId) {
-        throw new Error("CORTEJO_NOT_BELONG_TO_COFRADIA");
-      }
-    }
+    await validateCortejoBelongsToCofradia(cortejoId, cofradiaId);
 
     return prisma.insignia.create({
       data: {
         cofradiaId,
         nombre,
         ...(descripcion !== undefined && { descripcion }),
-        ...(cortejoId !== undefined && { cortejoId }),
+        ...(cortejoId !== undefined && {
+          cortejos: { connect: { id: cortejoId } },
+        }),
       },
+      include: { cortejos: true },
     });
   },
 
-  /**
-   * Listar insignias por cofradía
-   */
-  listInsigniasByCofradia: async (cofradiaId: number) => {
+  listInsigniasByCofradia: async (
+    cofradiaId: number
+  ): Promise<Insignia[]> => {
     return prisma.insignia.findMany({
       where: { cofradiaId },
       orderBy: { nombre: "asc" },
+      include: { cortejos: true },
     });
   },
 
-  /**
-   * Editar insignia
-   */
   editarInsignia: async ({
     cofradiaId,
     insigniaId,
     nombre,
     descripcion,
     cortejoId,
-  }: EditarInsigniaInput) => {
+  }: EditarInsigniaInput): Promise<Insignia> => {
     const insignia = await prisma.insignia.findUnique({
       where: { id: insigniaId },
     });
 
     if (!insignia) throw new Error("INSIGNIA_NOT_FOUND");
-    if (insignia.cofradiaId !== cofradiaId) {
+    if (insignia.cofradiaId !== cofradiaId)
       throw new Error("INSIGNIA_NOT_BELONG_TO_COFRADIA");
-    }
 
     const cofradia = await prisma.cofradia.findUnique({
       where: { id: cofradiaId },
@@ -99,7 +115,7 @@ export const insigniaService = {
     if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
     if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
 
-    if (nombre !== undefined) {
+    if (nombre) {
       const existe = await prisma.insignia.findFirst({
         where: {
           cofradiaId,
@@ -108,46 +124,41 @@ export const insigniaService = {
         },
       });
 
-      if (existe) {
-        throw new Error(
-          `Ya existe una insignia con nombre "${nombre}" en esta cofradía`
-        );
-      }
+      if (existe)
+        throw new Error(`Ya existe una insignia con nombre "${nombre}"`);
     }
 
-    if (cortejoId !== undefined && cortejoId !== null) {
-      const cortejo = await prisma.cortejo.findUnique({
-        where: { id: cortejoId },
-      });
+    await validateCortejoBelongsToCofradia(
+      cortejoId ?? undefined,
+      cofradiaId
+    );
 
-      if (!cortejo) throw new Error("CORTEJO_NOT_FOUND");
-      if (cortejo.cofradiaId !== cofradiaId) {
-        throw new Error("CORTEJO_NOT_BELONG_TO_COFRADIA");
-      }
-    }
+    const data: Prisma.InsigniaUpdateInput = {
+      ...(nombre !== undefined && { nombre }),
+      ...(descripcion !== undefined && { descripcion }),
+      ...(cortejoId !== undefined && {
+        cortejos: buildCortejosUpdate(cortejoId),
+      }),
+    };
 
     return prisma.insignia.update({
       where: { id: insigniaId },
-      data: {
-        ...(nombre !== undefined && { nombre }),
-        ...(descripcion !== undefined && { descripcion }),
-        ...(cortejoId !== undefined && { cortejoId }),
-      },
+      data,
+      include: { cortejos: true },
     });
   },
 
-  /**
-   * Borrar insignia
-   */
-  borrarInsignia: async (cofradiaId: number, insigniaId: number) => {
+  borrarInsignia: async (
+    cofradiaId: number,
+    insigniaId: number
+  ): Promise<{ deleted: true }> => {
     const insignia = await prisma.insignia.findUnique({
       where: { id: insigniaId },
     });
 
     if (!insignia) throw new Error("INSIGNIA_NOT_FOUND");
-    if (insignia.cofradiaId !== cofradiaId) {
+    if (insignia.cofradiaId !== cofradiaId)
       throw new Error("INSIGNIA_NOT_BELONG_TO_COFRADIA");
-    }
 
     const cofradia = await prisma.cofradia.findUnique({
       where: { id: cofradiaId },
