@@ -4,6 +4,9 @@
   "description": "Este repositorio contiene el backend del MVP de CofradíaGo, construido con **Node.js** y gestionado con **npm**.",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec \"ts-node --esm -r tsconfig-paths/register src/index.ts\"",
     "build": "tsc -p tsconfig.build.json",
