@@ -1,5 +1,5 @@
 // prisma/seed-reset.ts
-import { prisma } from "../src/config/prismaClient";
+import { prisma } from "../src/config/prismaClient.ts";
 
 async function main() {
   console.log("🧹 Cleaning seeded data...");
@@ -8,13 +8,22 @@ async function main() {
   await prisma.refreshToken.deleteMany({});
   await prisma.passwordResetToken.deleteMany({});
 
-  // Hermanos (dependen de Hermandad)
-  await prisma.hermano.deleteMany({});
+  // Elementos de insignia (dependen de Insignia)
+  await prisma.insigniaElemento.deleteMany({});
 
-  // Usuarios (dependen de Hermandad)
+  // Tablas dependientes de Cofradia
+  await prisma.tramo.deleteMany({});
+  await prisma.puesto.deleteMany({});
+  await prisma.cargo.deleteMany({});
+  await prisma.cortejo.deleteMany({});
+  await prisma.insignia.deleteMany({});
+  await prisma.cofradia.deleteMany({});
+
+  // Hermanos y Usuarios (dependen de Hermandad)
+  await prisma.hermano.deleteMany({});
   await prisma.user.deleteMany({});
 
-  // Hermandades (tabla raíz)
+  // Hermandad (tabla raíz)
   await prisma.hermandad.deleteMany({});
 
   console.log("✅ Database cleaned successfully!");
