@@ -1,4 +1,5 @@
 import { prisma } from "../config/prismaClient.ts";
+import { AppError } from "../errors/AppError.ts";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { MailService } from "./mail.service.ts";
@@ -55,7 +56,7 @@ export class PasswordService {
    */
   static async resetPassword(token: string, newPassword: string) {
     if (newPassword.length < 8) {
-      throw new Error("WEAK_PASSWORD");
+      throw new AppError("WEAK_PASSWORD");
     }
 
     const resetTokens = await prisma.passwordResetToken.findMany({
@@ -72,7 +73,7 @@ export class PasswordService {
       })
     ).then((results) => results.find(Boolean));
 
-    if (!matchedToken) throw new Error("INVALID_OR_EXPIRED_TOKEN");
+    if (!matchedToken) throw new AppError("INVALID_OR_EXPIRED_TOKEN");
 
     const user = matchedToken!.user;
 

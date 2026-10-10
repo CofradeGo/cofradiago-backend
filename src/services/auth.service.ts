@@ -1,9 +1,11 @@
 // auth.service.ts
 import { prisma } from "../config/prismaClient.ts";
+import { AppError } from "../errors/AppError.ts";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { JWT_SECRET } from "../config/index.ts";
+import { logger } from "../utils/logger.ts";
 import type { User, UserRole } from "../models/user.model.ts";
 
 interface TokenPayload {
@@ -63,18 +65,20 @@ export const loginService = async (
     include: { users: true },
   });
 
-  if (!hermandad) throw new Error("HERMANDAD_NOT_FOUND");
+  // Anti-enumeración: un dominio inexistente responde igual que una
+  // contraseña incorrecta, para no revelar qué hermandades existen.
+  if (!hermandad) throw new AppError("INVALID_CREDENTIALS");
 
   const user: User | undefined = hermandad.users.find(
     (u) => u.username === username
   );
 
-  if (!user) throw new Error("INVALID_CREDENTIALS");
+  if (!user) throw new AppError("INVALID_CREDENTIALS");
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
-  if (!isPasswordValid) throw new Error("INVALID_CREDENTIALS");
+  if (!isPasswordValid) throw new AppError("INVALID_CREDENTIALS");
 
-  if (!user.isActive) throw new Error("USER_INACTIVE");
+  if (!user.isActive) throw new AppError("USER_INACTIVE");
 
   const payload: TokenPayload = {
     id: user.id,
@@ -109,11 +113,11 @@ export const refreshTokenService = async (
     include: { user: true },
   });
 
-  if (!storedToken) throw new Error("INVALID_REFRESH_TOKEN");
+  if (!storedToken) throw new AppError("INVALID_REFRESH_TOKEN");
 
   const user = storedToken.user;
 
-  if (!user.isActive) throw new Error("USER_INACTIVE");
+  if (!user.isActive) throw new AppError("USER_INACTIVE");
 
   const payload: TokenPayload = {
     id: user.id,
@@ -156,9 +160,11 @@ export const logoutService = async (
     where: { id: tokenRecord.id },
   });
 
-  console.log(
-    `🔐 Logout realizado — user ${tokenRecord.userId}, IP: ${ip}, device: ${deviceInfo}`
-  );
+  logger.info("Logout realizado", {
+    usuario: tokenRecord.userId,
+    ip: ip ?? null,
+    dispositivo: deviceInfo ?? null,
+  });
 
   return;
 };

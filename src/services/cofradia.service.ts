@@ -1,4 +1,5 @@
 import { prisma } from "../config/prismaClient.ts";
+import { AppError } from "../errors/AppError.ts";
 
 // ===============================
 // CREATE FULL COFRADIA - INPUTS
@@ -106,27 +107,22 @@ export const cofradiaService = {
     order = "desc",
     estado,
   }: ListCofradiasOptions) => {
-    try {
-      const where: { hermandadId: number; estado?: "ABIERTA" | "CERRADA" } = {
-        hermandadId,
-      };
-      if (estado) where.estado = estado;
+    const where: { hermandadId: number; estado?: "ABIERTA" | "CERRADA" } = {
+      hermandadId,
+    };
+    if (estado) where.estado = estado;
 
-      return await prisma.cofradia.findMany({
-        where,
-        select: {
-          id: true,
-          nombre: true,
-          anio: true,
-          tipo: true,
-          estado: true,
-        },
-        orderBy: { anio: order },
-      });
-    } catch (error) {
-      console.error("Error en cofradiaService.listCofradias:", error);
-      throw new Error("No se pudieron listar las cofradías");
-    }
+    return await prisma.cofradia.findMany({
+      where,
+      select: {
+        id: true,
+        nombre: true,
+        anio: true,
+        tipo: true,
+        estado: true,
+      },
+      orderBy: { anio: order },
+    });
   },
 
   actualizarCofradia: async (
@@ -136,8 +132,8 @@ export const cofradiaService = {
     const cofradia = await prisma.cofradia.findUnique({
       where: { id: cofradiaId },
     });
-    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
-    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
+    if (!cofradia) throw new AppError("COFRADIA_NOT_FOUND");
+    if (cofradia.estado !== "ABIERTA") throw new AppError("COFRADIA_CERRADA");
 
     // ✅ Filtramos datos válidos nuevamente
     const updateData: ActualizarCofradiaInput = {};
@@ -149,7 +145,7 @@ export const cofradiaService = {
       updateData.tipo = data.tipo.trim();
 
     if (Object.keys(updateData).length === 0) {
-      throw new Error("NO_VALID_FIELDS"); // nadie debería llegar aquí, pero refuerzo seguridad
+      throw new AppError("NO_VALID_FIELDS"); // nadie debería llegar aquí, pero refuerzo seguridad
     }
 
     // Validar unicidad si se cambia nombre y año
@@ -186,8 +182,8 @@ export const cofradiaService = {
         where: { id: cofradiaId },
       });
 
-      if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
-      if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
+      if (!cofradia) throw new AppError("COFRADIA_NOT_FOUND");
+      if (cofradia.estado !== "ABIERTA") throw new AppError("COFRADIA_CERRADA");
 
       // 1️⃣ Obtener IDs de insignias
       const insignias = await tx.insignia.findMany({
@@ -257,7 +253,7 @@ export const cofradiaService = {
       });
 
       if (!cofradiaOriginal) {
-        throw new Error("COFRADIA_NOT_FOUND");
+        throw new AppError("COFRADIA_NOT_FOUND");
       }
 
       // 2️⃣ Comprobar que no exista ya una cofradía con mismo nombre y año
