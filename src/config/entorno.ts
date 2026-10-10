@@ -22,7 +22,9 @@ const esquema = z.object({
       message: "DATABASE_URL debe ser una URL de PostgreSQL",
     }),
 
-  JWT_SECRET: z.string().min(16, "JWT_SECRET debe tener al menos 16 caracteres"),
+  // Solo exigimos longitud en producción: el CI usa un secreto de
+  // prueba corto a propósito y no debe impedir ejecutar los tests.
+  JWT_SECRET: z.string().min(1, "JWT_SECRET no puede estar vacío"),
 
   FRONTEND_URL: z.string().url().default("http://localhost:5173"),
 
@@ -43,6 +45,29 @@ if (!resultado.success) {
 }
 
 const valores = resultado.data;
+
+/**
+ * Reglas que dependen del entorno y no encajan en el esquema.
+ * Un secreto corto es inaceptable en producción, pero el CI usa uno de
+ * prueba y debe poder ejecutar los tests.
+ */
+const avisos: string[] = [];
+
+if (valores.NODE_ENV === "production") {
+  if (valores.JWT_SECRET.length < 32) {
+    avisos.push("JWT_SECRET debe tener al menos 32 caracteres en producción");
+  }
+  if (valores.JWT_SECRET === "cambia_esto_por_un_secreto_largo_y_aleatorio") {
+    avisos.push("JWT_SECRET sigue siendo el de ejemplo: cámbialo antes de desplegar");
+  }
+}
+
+if (avisos.length > 0) {
+  throw new Error(
+    `Configuración insegura para ${valores.NODE_ENV}:\n` +
+      avisos.map((a) => `  · ${a}`).join("\n")
+  );
+}
 
 export const entorno = {
   ...valores,

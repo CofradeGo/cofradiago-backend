@@ -21,3 +21,6 @@ build/
 
 /src/generated/prisma
 /uploads/
+
+# Configuración local de tests
+.env.test
