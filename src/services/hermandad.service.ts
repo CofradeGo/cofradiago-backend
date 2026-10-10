@@ -1,4 +1,5 @@
 import {prisma} from "../config/prismaClient.ts";
+import { AppError } from "../errors/AppError.ts";
 import type { User } from "../models/user.model.ts";
 import type { Hermandad, UpdateHermandadDTO } from "../models/hermandad.model.ts";
 const APP_URL = process.env.STORAGE_BASE || process.env.APP_URL;
@@ -30,13 +31,13 @@ export const getHermandadByDomain = async (
   });
 
   if (!hermandad) {
-    throw new Error("HERMANDAD_NOT_FOUND");
+    throw new AppError("HERMANDAD_NOT_FOUND");
   }
 
   // Verificar que el usuario pertenece a la hermandad
   const pertenece = hermandad.users.some((u) => u.id === user.id);
   if (!pertenece) {
-    throw new Error("FORBIDDEN");
+    throw new AppError("FORBIDDEN");
   }
 
   // Devolver solo la info necesaria, sin passwords ni datos sensibles
@@ -73,7 +74,7 @@ export const getPublicInfoHdad = async function getPublicInfoHdad(domain: string
   });
 
   if (!hermandad) {
-    throw new Error("HERMANDAD_NOT_FOUND");
+    throw new AppError("HERMANDAD_NOT_FOUND");
   }
 
   // Transformamos el objeto antes de devolverlo
@@ -94,13 +95,13 @@ export const updateHermandad = async (
     include: { users: true },
   });
 
-  if (!hermandad) throw new Error("HERMANDAD_NOT_FOUND");
+  if (!hermandad) throw new AppError("HERMANDAD_NOT_FOUND");
 
   // Solo el DMG puede modificar su hermandad
   const dmUser = hermandad.users.find(
     (u) => u.id === user.id && u.role === "DMG"
   );
-  if (!dmUser) throw new Error("ACCESS_DENIED");
+  if (!dmUser) throw new AppError("ACCESS_DENIED");
 
   // Construimos dinámicamente qué campos actualizar
   const updateData: Record<string, unknown> = {

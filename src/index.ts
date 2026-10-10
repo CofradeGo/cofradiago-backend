@@ -4,7 +4,9 @@ import express, { type Application } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
-import testRoutes from "./routes/test.routes.ts";
+import { entorno } from "./config/entorno.ts";
+import { logger } from "./utils/logger.ts";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.ts";
 import authRoutes from "./routes/auth.routes.ts";
 import hermandadRoutes from "./routes/hermandad.routes.ts";
 import userRoutes from "./routes/user.routes.ts";
@@ -29,7 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 //CORS GLOBAL
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL = entorno.FRONTEND_URL;
 
 app.use(
   cors({
@@ -40,7 +42,6 @@ app.use(
 
 // Rutas
 app.use("/public", hermandadRoutes);
-app.use("/api/test", testRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/hermandad", hermandadRoutes);
 app.use("/api/v1/users", userRoutes);
@@ -60,10 +61,19 @@ app.use("/api/v1/cofradias", insigniaElementoRouter);
 // Archivos estáticos
 app.use("/uploads/logos", express.static(path.join(__dirname, "..", "uploads/logos")));
 
+// 404 y manejador de errores. Deben montarse los últimos: capturan todo
+// lo que no haya respondido antes y evitan que cada controller repita
+// el mapeo de errores a status HTTP.
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 if (process.env.NODE_ENV !== "test") {
-  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+  const PORT = entorno.PORT;
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
+    logger.info("Servidor escuchando", {
+      puerto: PORT,
+      entorno: entorno.NODE_ENV,
+    });
   });
 }
 

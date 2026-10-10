@@ -1,4 +1,5 @@
 import {prisma} from "../config/prismaClient.ts";
+import { AppError } from "../errors/AppError.ts";
 import bcrypt from "bcrypt";
 import type { User, UpdateUserDTO} from "../models/user.model.ts";
 
@@ -12,18 +13,24 @@ export class UserService {
 
     // 1. Solo usuarios DMG pueden crear AUX
     if (dmUser.role !== "DMG") {
-      throw new Error("No tienes permisos para crear usuarios.");
+      throw new AppError("ACCESS_DENIED", {
+        message: "Solo un DMG puede crear usuarios auxiliares.",
+      });
     }
 
     // 2. Validaciones simples
     if (!username || !password) {
-      throw new Error("Los campos username y password son obligatorios.");
+      throw new AppError("NO_VALID_FIELDS", {
+        message: "Los campos username y password son obligatorios.",
+      });
     }
 
     // 3. Comprobar si el username ya existe
     const userExists = await prisma.user.findUnique({ where: { username } });
     if (userExists) {
-      throw new Error("El nombre de usuario ya existe.");
+      throw new AppError("NOMBRE_DUPLICADO", {
+        message: "El nombre de usuario ya existe.",
+      });
     }
 
     // 4. Hashear contraseña
@@ -58,12 +65,12 @@ export class UserService {
   static async deactivateUser(dmUser: User, targetUserId: number) {
     // 1. Validar que el DMG existe y tiene rol correcto
     if (dmUser.role !== "DMG") {
-      throw new Error("FORBIDDEN_ACTION"); // Código claro y consistente
+      throw new AppError("FORBIDDEN_ACTION"); // Código claro y consistente
     }
 
     // 2. Prevenir que se elimine a sí mismo
     if (dmUser.id === targetUserId) {
-      throw new Error("CANNOT_DELETE_SELF");
+      throw new AppError("CANNOT_DELETE_SELF");
     }
 
     // 3. Buscar al usuario objetivo
@@ -72,12 +79,12 @@ export class UserService {
     });
 
     if (!targetUser) {
-      throw new Error("USER_NOT_FOUND");
+      throw new AppError("USER_NOT_FOUND");
     }
 
     // 4. Solo puede eliminar usuarios de su propia hermandad
     if (targetUser.hermandadId !== dmUser.hermandadId) {
-      throw new Error("FORBIDDEN_ACTION");
+      throw new AppError("FORBIDDEN_ACTION");
     }
 
     // 5. Actualizar isActive a false
@@ -151,13 +158,13 @@ export class UserService {
     });
 
     if (!userInDb) {
-      throw new Error("USER_NOT_FOUND");
+      throw new AppError("USER_NOT_FOUND");
     }
 
     // 2. Validar actualización de contraseña
     if (oldPassword || newPassword) {
       if (!oldPassword || !newPassword) {
-        throw new Error("PASSWORD_FIELDS_REQUIRED");
+        throw new AppError("PASSWORD_FIELDS_REQUIRED");
       }
 
       const isOldPasswordValid = await bcrypt.compare(
@@ -166,7 +173,7 @@ export class UserService {
       );
 
       if (!isOldPasswordValid) {
-        throw new Error("INVALID_OLD_PASSWORD");
+        throw new AppError("INVALID_OLD_PASSWORD");
       }
     }
 
@@ -183,7 +190,7 @@ export class UserService {
 
     // Si no hay cambios, devolver error
     if (Object.keys(dataToUpdate).length === 0) {
-      throw new Error("NO_FIELDS_TO_UPDATE");
+      throw new AppError("NO_FIELDS_TO_UPDATE");
     }
 
     // 4. Actualizar en BBDD

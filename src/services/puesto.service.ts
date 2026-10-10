@@ -1,4 +1,9 @@
 import { prisma } from "../config/prismaClient.ts";
+import { AppError } from "../errors/AppError.ts";
+import {
+  asegurarNombreLibre,
+  obtenerCofradiaEditable,
+} from "./guards/cofradia.guards.ts";
 
 interface CrearPuestoInput {
   cofradiaId: number;
@@ -16,38 +21,21 @@ export const puestoService = {
      CREAR PUESTO
   ===================================================== */
   crearPuesto: async ({ cofradiaId, nombre, codigo }: CrearPuestoInput) => {
-    // 1️⃣ Validar cofradía
-    const cofradia = await prisma.cofradia.findUnique({
-      where: { id: cofradiaId },
-    });
-
-    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
-    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
+    // 1️⃣ La cofradía debe existir y admitir cambios
+    await obtenerCofradiaEditable(cofradiaId);
 
     // 2️⃣ Evitar duplicados
-    const existe = await prisma.puesto.findFirst({
-      where: { cofradiaId, nombre },
-    });
-
-    if (existe) {
-      throw new Error(
-        `Ya existe un puesto con nombre "${nombre}" en esta cofradía`
-      );
-    }
+    const existe = await prisma.puesto.findFirst({ where: { cofradiaId, nombre } });
+    asegurarNombreLibre(existe, nombre, "puesto");
 
     // 3️⃣ Construcción segura del data
     const data: {
       cofradiaId: number;
       nombre: string;
       codigo?: string | null;
-    } = {
-      cofradiaId,
-      nombre,
-    };
+    } = { cofradiaId, nombre };
 
-    if (codigo !== undefined) {
-      data.codigo = codigo;
-    }
+    if (codigo !== undefined) data.codigo = codigo;
 
     return prisma.puesto.create({ data });
   },
@@ -70,16 +58,11 @@ export const puestoService = {
       where: { id: puestoId },
     });
 
-    if (!puesto) throw new Error("PUESTO_NOT_FOUND");
+    if (!puesto) throw new AppError("PUESTO_NOT_FOUND");
 
-    const cofradia = await prisma.cofradia.findUnique({
-      where: { id: puesto.cofradiaId },
-    });
+    await obtenerCofradiaEditable(puesto.cofradiaId);
 
-    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
-    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
-
-    // Evitar duplicados de nombre
+    // Evitar duplicados de nombre, excluyendo el propio puesto
     if (input.nombre !== undefined) {
       const existe = await prisma.puesto.findFirst({
         where: {
@@ -88,32 +71,15 @@ export const puestoService = {
           NOT: { id: puestoId },
         },
       });
-
-      if (existe) {
-        throw new Error(
-          `Ya existe un puesto con nombre "${input.nombre}" en esta cofradía`
-        );
-      }
+      asegurarNombreLibre(existe, input.nombre, "puesto");
     }
 
-    // Construcción segura del update
-    const data: {
-      nombre?: string;
-      codigo?: string | null;
-    } = {};
+    // Construcción segura del update: solo los campos enviados
+    const data: { nombre?: string; codigo?: string | null } = {};
+    if (input.nombre !== undefined) data.nombre = input.nombre;
+    if (input.codigo !== undefined) data.codigo = input.codigo;
 
-    if (input.nombre !== undefined) {
-      data.nombre = input.nombre;
-    }
-
-    if (input.codigo !== undefined) {
-      data.codigo = input.codigo;
-    }
-
-    return prisma.puesto.update({
-      where: { id: puestoId },
-      data,
-    });
+    return prisma.puesto.update({ where: { id: puestoId }, data });
   },
 
   /* =====================================================
@@ -124,17 +90,10 @@ export const puestoService = {
       where: { id: puestoId },
     });
 
-    if (!puesto) throw new Error("PUESTO_NOT_FOUND");
+    if (!puesto) throw new AppError("PUESTO_NOT_FOUND");
 
-    const cofradia = await prisma.cofradia.findUnique({
-      where: { id: puesto.cofradiaId },
-    });
+    await obtenerCofradiaEditable(puesto.cofradiaId);
 
-    if (!cofradia) throw new Error("COFRADIA_NOT_FOUND");
-    if (cofradia.estado !== "ABIERTA") throw new Error("COFRADIA_CERRADA");
-
-    return prisma.puesto.delete({
-      where: { id: puestoId },
-    });
+    return prisma.puesto.delete({ where: { id: puestoId } });
   },
 };

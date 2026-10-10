@@ -1,11 +1,19 @@
-import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { entorno } from "./entorno.ts";
 
-const connectionString = process.env.DATABASE_URL!;
+/**
+ * Cliente de Prisma único para toda la aplicación.
+ *
+ * En tests no se registran las queries: cada una ensucia la salida de
+ * Jest y no aporta nada (el error ya se ve en el propio aserto).
+ */
+const adapter = new PrismaPg({ connectionString: entorno.DATABASE_URL });
 
-const adapter = new PrismaPg({ connectionString });
 export const prisma = new PrismaClient({
   adapter,
-  log: ["query", "info", "warn", "error"], // ✅ aquí añadimos los logs
+  log:
+    entorno.NODE_ENV === "test"
+      ? ["warn", "error"]
+      : ["query", "info", "warn", "error"],
 });
