@@ -2,6 +2,17 @@ import {prisma} from "../config/prismaClient.ts";
 import type { User } from "../models/user.model.ts";
 import type { Hermandad, UpdateHermandadDTO } from "../models/hermandad.model.ts";
 const APP_URL = process.env.STORAGE_BASE || process.env.APP_URL;
+
+/**
+ * Construye la URL absoluta de un recurso servido por el backend.
+ * Si no hay base configurada, devuelve la ruta relativa tal cual,
+ * evitando el clásico literal "undefined/uploads/...".
+ */
+const urlRecurso = (ruta: string | null | undefined): string | null => {
+  if (!ruta) return null;
+  if (/^https?:\/\//i.test(ruta)) return ruta;
+  return `${APP_URL ?? ""}${ruta}`;
+};
 /**
  * Get all info for the Hermandad
  * @param domain 
@@ -34,7 +45,7 @@ export const getHermandadByDomain = async (
     name: hermandad.name,
     domain: hermandad.domain,
     officialEmail: hermandad.officialEmail,
-    logoUrl: `${APP_URL}${hermandad.logoUrl}`,
+    logoUrl: urlRecurso(hermandad.logoUrl),
     users: hermandad.users.map((u) => ({
       id: u.id,
       username: u.username,
@@ -51,7 +62,6 @@ export const getHermandadByDomain = async (
  */
 export const getPublicInfoHdad = async function getPublicInfoHdad(domain: string) {
   const cleanDomain = domain.trim().toLowerCase();
-  const APP_URL = process.env.APP_URL; // <- IMPORTANTE
 
   const hermandad = await prisma.hermandad.findUnique({
     where: { domain: cleanDomain },
@@ -69,9 +79,7 @@ export const getPublicInfoHdad = async function getPublicInfoHdad(domain: string
   // Transformamos el objeto antes de devolverlo
   return {
     ...hermandad,
-    logoUrl: hermandad.logoUrl
-      ? `${APP_URL}${hermandad.logoUrl}`
-      : null,
+    logoUrl: urlRecurso(hermandad.logoUrl),
   };
 };
 
