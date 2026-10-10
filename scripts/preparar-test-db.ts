@@ -24,6 +24,7 @@ const BASE_DATOS_MAESTRA = "postgres";
 
 const urlBase = urlBaseDeTest();
 const NOMBRE_TEST_DB = nombreBaseDeTest();
+const urlUser = decodeURIComponent(new URL(urlBase).username);
 
 /** Misma conexión pero contra la base maestra, que es la única que
  *  permite ejecutar CREATE DATABASE. */
@@ -62,7 +63,7 @@ async function crearBaseSiNoExiste(): Promise<void> {
   });
 
   try {
-    const existe = await admin.$queryRawUnsafe(
+    const existe = await admin.$queryRawUnsafe<{ exists: number }[]>(
       "SELECT 1 FROM pg_database WHERE datname = $1",
       NOMBRE_TEST_DB
     );
@@ -81,7 +82,7 @@ async function crearBaseSiNoExiste(): Promise<void> {
   } catch (error) {
     console.error(
       `❌ No se pudo crear "${NOMBRE_TEST_DB}".\n` +
-        `   Conectando a ${BASE_DATOS_MAESTRA} como "${url.username}".\n` +
+        `   Conectando a ${BASE_DATOS_MAESTRA} como "${urlUser}".\n` +
         "   En Docker basta con levantar el servicio; en Postgres.app,\n" +
         "   usa la misma contraseña que tenga el rol.",
       error

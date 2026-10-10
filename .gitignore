@@ -24,3 +24,16 @@ build/
 
 # Configuración local de tests
 .env.test
+
+# Compilados de tests, scripts y prisma (tsc los genera junto a las fuentes)
+__tests__/**/*.js
+__tests__/**/*.d.ts
+__tests__/**/*.map
+scripts/**/*.js
+scripts/**/*.d.ts
+scripts/**/*.map
+prisma/**/*.js
+prisma/**/*.d.ts
+prisma/**/*.map
+*.config.js
+*.config.d.ts

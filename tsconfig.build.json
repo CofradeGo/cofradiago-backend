@@ -1,4 +1,7 @@
 {
+  // Solo se compila src/. Sin este include, tsc se llevaría también
+  // __tests__ y scripts/ y falla por rootDir.
+  "include": ["src"],
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
@@ -9,6 +12,11 @@
     "target": "ES2020",
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,
+
+    // El proyecto importa con extensión explícita (.ts), que ESM exige.
+    // Al compilar, TypeScript la reescribe a .js en el dist.
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
 
     // Librerías y tipado
     "strict": true,
