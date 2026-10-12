@@ -2,7 +2,15 @@
   "extends": "./tsconfig.build.json",
   "compilerOptions": {
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    // tsconfig.build.json los restringe a ["node"] para el build, donde
+    // los globals de Jest no existen. Aquí sí hacen falta.
+    "types": ["node", "jest"],
+    // El build solo compila src/, pero aquí entran también tests y
+    // scripts, que quedan fuera de ese rootDir.
+    "rootDir": "."
   },
-  "include": ["src"]
+  // El editor usa este fichero, así que los tests deben incluirse:
+  // si no, describe/test/expect aparecen como "no encontrados".
+  "include": ["src", "__tests__", "scripts", "jest.config.js"]
 }
