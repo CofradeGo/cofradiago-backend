@@ -9,7 +9,8 @@ import type { User } from "../models/user.model.ts";
 interface CrearInsigniaBody {
   nombre: string;
   descripcion?: string;
-  cortejoId?: number;
+  /** `null` o ausente: se crea sin asignar a ningún cortejo. */
+  cortejoId?: number | null;
 }
 
 interface EditarInsigniaBody {

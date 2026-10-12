@@ -8,7 +8,8 @@ import type { Insignia, Prisma } from "@prisma/client";
 
 interface CrearInsigniaInput {
   cofradiaId: number;
-  cortejoId?: number;
+  /** `null` o ausente: la insignia se crea sin asignar a ningún cortejo. */
+  cortejoId?: number | null;
   nombre: string;
   descripcion?: string;
 }
@@ -25,8 +26,9 @@ interface EditarInsigniaInput {
    HELPERS
 ===================================================== */
 
+/** `null` y `undefined` significan lo mismo aquí: no hay cortejo que validar. */
 const validateCortejoBelongsToCofradia = async (
-  cortejoId?: number,
+  cortejoId?: number | null,
   cofradiaId?: number
 ) => {
   if (!cortejoId) return;
@@ -74,7 +76,10 @@ export const insigniaService = {
         cofradiaId,
         nombre,
         ...(descripcion !== undefined && { descripcion }),
-        ...(cortejoId !== undefined && {
+        // Solo se conecta un cortejo si se ha indicado uno. `null`
+        // significa "sin cortejo": conectar un id nulo hace que Prisma
+        // aborte la consulta con "Argument `id` must not be null".
+        ...(cortejoId != null && {
           cortejos: { connect: { id: cortejoId } },
         }),
       },
