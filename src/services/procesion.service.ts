@@ -83,6 +83,14 @@ export interface Procesion {
      * plazas aunque sea un solo cargo.
      */
     cargos: number;
+    /**
+     * Personas que hacen falta en todo el cortejo, sumando las tres
+     * clases. Es la cifra que sirve para saber cuánto trabajo hay: con
+     * `cargos` a secas, "2 cargos" escondía que hacen falta cuatro
+     * personas, y ahora que puestos e insignias también llevan plazas,
+     * sumar solo una de las tres daría un número engañoso.
+     */
+    plazas: number;
   };
 }
 
@@ -286,8 +294,13 @@ export const procesionService = {
           0,
         ),
         insignias: resultado.reduce((n, t) => n + t.insignias.length, 0),
-        cargos: resultado.reduce(
-          (n, t) => n + t.cargos.reduce((m, c) => m + c.plazas, 0),
+        cargos: resultado.reduce((n, t) => n + t.cargos.length, 0),
+        plazas: resultado.reduce(
+          (n, t) =>
+            n +
+            t.cargos.reduce((m, c) => m + c.plazas, 0) +
+            t.insignias.reduce((m, i) => m + i.plazas, 0) +
+            t.puestos.reduce((m, p) => m + p.plazas, 0),
           0,
         ),
       },
