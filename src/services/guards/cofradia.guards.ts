@@ -73,3 +73,41 @@ export function asegurarPertenencia<T extends { cofradiaId: number }>(
 
   return recurso;
 }
+
+/**
+ * Valida la lista de ids que llega al reordenar un listado.
+ *
+ * El cliente manda los ids ya en el orden que quiere, y el servidor
+ * les asigna la posición 1..n. Se exige que la lista sea una
+ * permutación exacta de lo que hay guardado: si falta un elemento o
+ * sobra uno, aplicarla dejaría huecos o duplicados en `orden` sin que
+ * nadie se entere, y el siguiente listado saldría descoyuntado.
+ *
+ * @param guardados  ids actualmente guardados, en orden
+ * @param recibidos  ids que manda el cliente, ya ordenados
+ * @throws AppError ORDENES_INVALIDOS
+ */
+export function asegurarListaDeOrdenValida(
+  guardados: number[],
+  recibidos: number[],
+): void {
+  if (!Array.isArray(recibidos) || recibidos.length === 0) {
+    throw new AppError("ORDENES_INVALIDOS");
+  }
+
+  if (recibidos.length !== guardados.length) {
+    throw new AppError("ORDENES_INVALIDOS", {
+      message: `Se esperaban ${guardados.length} elementos en el orden y se han recibido ${recibidos.length}. Vuelve a cargar la lista e inténtalo de nuevo.`,
+    });
+  }
+
+  const unicos = new Set(recibidos);
+  const cubreTodos = guardados.every((id) => unicos.has(id));
+
+  if (unicos.size !== recibidos.length || !cubreTodos) {
+    throw new AppError("ORDENES_INVALIDOS", {
+      message:
+        "La lista de orden no coincide con los elementos guardados. Vuelve a cargar la lista e inténtalo de nuevo.",
+    });
+  }
+}

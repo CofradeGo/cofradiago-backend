@@ -114,3 +114,33 @@ export const borrarTramo = async (req: Request, res: Response) => {
   return res.status(200).json({ message: "Tramo eliminado correctamente." });
   
 };
+
+/* =====================================================
+   REORDENAR TRAMOS (DMG)
+===================================================== */
+export const reordenarTramos = async (req: Request, res: Response) => {
+  const user = req.user as User | undefined;
+  if (!user) throw new AppError("ACCESS_DENIED", {
+      message: "Usuario no autenticado.",
+    });
+  if (user.role !== "DMG") throw new AppError("ACCESS_DENIED", {
+      message: "Solo DMG puede reordenar los tramos.",
+    });
+
+  const { cofradiaId, cortejoId } = req.params;
+  if (!cofradiaId || !cortejoId) throw new AppError("NO_VALID_FIELDS", {
+      message: "Parámetros cofradiaId y cortejoId obligatorios.",
+    });
+
+  const { ids } = req.body as { ids?: number[] };
+
+  const tramos = await tramoService.reordenarTramos(
+    Number(cofradiaId),
+    Number(cortejoId),
+    ids ?? [],
+  );
+  return res.status(200).json({
+    message: "Orden de los tramos actualizado.",
+    tramos,
+  });
+};

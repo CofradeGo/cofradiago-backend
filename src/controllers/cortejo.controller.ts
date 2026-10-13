@@ -17,15 +17,16 @@ export const crearCortejo = async (req: Request, res: Response) => {
   if (user.role !== "DMG") throw new AppError("ACCESS_DENIED", {
       message: "Solo DMG puede crear cortejos.",
     });
-  if (!cofradiaId || !nombre || orden === undefined)
+  if (!cofradiaId || !nombre)
     throw new AppError("NO_VALID_FIELDS", {
       message: "Datos incompletos.",
     });
 
+  // `orden` es opcional: si no viene, el cortejo entra el último.
   const cortejo = await cortejoService.crearCortejo({
     cofradiaId: Number(cofradiaId),
     nombre,
-    orden: Number(orden),
+    ...(orden !== undefined && { orden: Number(orden) }),
   });
 
   return res.status(201).json({ message: `Cortejo "${cortejo.nombre}" creado.`, cortejo });
@@ -91,4 +92,31 @@ export const borrarCortejo = async (req: Request, res: Response) => {
   const cortejo = await cortejoService.borrarCortejo(Number(cortejoId));
   return res.status(200).json({ message: `Cortejo "${cortejo.nombre}" eliminado.`, cortejo });
   
+};
+
+/**
+ * PATCH /api/v1/cofradias/:cofradiaId/cortejos/orden
+ * Guardar el nuevo orden de los cortejos tras arrastrarlos en la tabla.
+ */
+export const reordenarCortejos = async (req: Request, res: Response) => {
+  const user = req.user as User | undefined;
+  if (!user) throw new AppError("ACCESS_DENIED", {
+      message: "Usuario no autenticado.",
+    });
+  if (user.role !== "DMG") throw new AppError("ACCESS_DENIED", {
+      message: "Solo DMG puede reordenar los cortejos.",
+    });
+
+  const { cofradiaId } = req.params;
+  if (!cofradiaId) throw new AppError("NO_VALID_FIELDS", {
+      message: "Parámetro cofradiaId obligatorio.",
+    });
+
+  const { ids } = req.body as { ids?: number[] };
+
+  const cortejos = await cortejoService.reordenarCortejos(Number(cofradiaId), ids ?? []);
+  return res.status(200).json({
+    message: "Orden de los cortejos actualizado.",
+    cortejos,
+  });
 };

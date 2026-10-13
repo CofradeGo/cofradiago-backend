@@ -40,6 +40,7 @@ export const ERROR_CATALOG = {
   CORTEJO_NOT_BELONG_TO_COFRADIA: { status: 400, message: "El cortejo no pertenece a la cofradía" },
   TRAMO_NOT_BELONG_TO_COFRADIA: { status: 400, message: "El tramo no pertenece a la cofradía" },
   TRAMO_NOT_BELONG_TO_CORTEJO: { status: 400, message: "El tramo no pertenece al cortejo" },
+  ORDENES_INVALIDOS: { status: 400, message: "La lista de orden recibida no es válida" },
   INSIGNIA_NOT_BELONG_TO_COFRADIA: { status: 400, message: "La insignia no pertenece a la cofradía" },
   INVALID_OR_EXPIRED_TOKEN: { status: 400, message: "El enlace no es válido o ha caducado" },
   INVALID_OLD_PASSWORD: { status: 401, message: "La contraseña actual no es correcta" },

@@ -1,5 +1,6 @@
 import { prisma } from "../config/prismaClient.ts";
 import {
+  asegurarListaDeOrdenValida,
   asegurarNombreLibre,
   obtenerCofradiaEditable,
 } from "./guards/cofradia.guards.ts";
@@ -111,5 +112,51 @@ export const tramoService = {
 
     await prisma.tramo.delete({ where: { id: tramoId } });
     return { deleted: true };
+  },
+
+  /* =====================================================
+     REORDENAR TRAMOS
+  ===================================================== */
+  /**
+   * Guarda el nuevo orden de los tramos de un cortejo. Igual que en
+   * los cortejos, el cliente manda los ids ordenados y el servidor
+   * asigna las posiciones 1..n.
+   */
+  reordenarTramos: async (
+    cofradiaId: number,
+    cortejoId: number,
+    ids: number[],
+  ) => {
+    await obtenerCofradiaEditable(cofradiaId);
+
+    const cortejo = await prisma.cortejo.findUnique({
+      where: { id: cortejoId },
+    });
+    if (!cortejo) throw new AppError("CORTEJO_NOT_FOUND");
+    if (cortejo.cofradiaId !== cofradiaId)
+      throw new AppError("CORTEJO_NOT_BELONG_TO_COFRADIA");
+
+    const actuales = await prisma.tramo.findMany({
+      where: { cofradiaId, cortejoId },
+      orderBy: { orden: "asc" },
+      select: { id: true },
+    });
+
+    asegurarListaDeOrdenValida(
+      actuales.map((t) => t.id),
+      ids,
+    );
+
+    // En transacción: o se guarda el orden entero o no se guarda nada.
+    await prisma.$transaction(
+      ids.map((id, indice) =>
+        prisma.tramo.update({ where: { id }, data: { orden: indice + 1 } }),
+      ),
+    );
+
+    return prisma.tramo.findMany({
+      where: { cofradiaId, cortejoId },
+      orderBy: { orden: "asc" },
+    });
   },
 };
