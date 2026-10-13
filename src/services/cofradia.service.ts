@@ -165,14 +165,45 @@ export const cofradiaService = {
         },
       });
       if (existe)
-        throw new Error(
-          `Ya existe una cofradía con nombre "${updateData.nombre}" y año ${updateData.anio}`
-        );
+        throw new AppError("NOMBRE_DUPLICADO", {
+          message: `Ya existe una cofradía con nombre "${updateData.nombre}" y año ${updateData.anio}`,
+        });
     }
 
     return await prisma.cofradia.update({
       where: { id: cofradiaId },
       data: updateData,
+    });
+  },
+
+  /**
+   * Abre o cierra una cofradía.
+   *
+   * Va aparte de `actualizarCofradia` porque ese método se niega a
+   * tocar una cofradía ya cerrada, que es justo lo que hay que poder
+   * hacer para reabrirla. Cerrar deja la cofradía en solo lectura: lo
+   * garantizan los guards que usan el resto de servicios.
+   */
+  cambiarEstado: async (
+    cofradiaId: number,
+    estado: "ABIERTA" | "CERRADA",
+  ) => {
+    const cofradia = await prisma.cofradia.findUnique({
+      where: { id: cofradiaId },
+      select: { id: true, estado: true },
+    });
+
+    if (!cofradia) throw new AppError("COFRADIA_NOT_FOUND");
+
+    // Si ya está en ese estado se devuelve tal cual, pero completo:
+    // quien llama siempre espera la cofradía entera.
+    if (cofradia.estado === estado) {
+      return prisma.cofradia.findUniqueOrThrow({ where: { id: cofradiaId } });
+    }
+
+    return prisma.cofradia.update({
+      where: { id: cofradiaId },
+      data: { estado },
     });
   },
 

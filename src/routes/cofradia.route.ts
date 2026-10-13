@@ -4,6 +4,7 @@ import {
   crearCofradia,
   listCofradias,
   actualizarCofradia,
+  cambiarEstadoCofradia,
   borrarCofradia,
   clonarCofradia,
   crearFullCofradia,
@@ -24,6 +25,10 @@ router.get("/", authMiddleware, listCofradias);
 router.put("/:cofradiaId", authMiddleware, actualizarCofradia);
 
 // Borrar cofradía por ID (solo DMG, solo si está ABIERTA)
+// Abrir o cerrar la cofradía. Va antes que el PUT porque "estado" no
+// es un campo editable del PUT: filtrado allí, nunca se habría aplicado.
+router.patch("/:cofradiaId/estado", authMiddleware, cambiarEstadoCofradia);
+
 router.delete("/:cofradiaId", authMiddleware, borrarCofradia);
 
 // Clonar cofradía por ID (solo DMG)

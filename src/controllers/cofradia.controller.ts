@@ -179,3 +179,32 @@ export const crearFullCofradia = async (req: Request, res: Response) => {
   });
   
 };
+
+/**
+ * PATCH /api/v1/cofradias/:cofradiaId/estado
+ * Abrir o cerrar una cofradía (solo DMG).
+ */
+export const cambiarEstadoCofradia = async (req: Request, res: Response) => {
+  const user = req.user as User | undefined;
+  if (!user) throw new AppError("ACCESS_DENIED");
+  if (user.role !== "DMG") throw new AppError("ACCESS_DENIED");
+
+  const { cofradiaId } = req.params;
+  if (!cofradiaId) throw new AppError("COFRADIA_NOT_FOUND");
+
+  const { estado } = req.body as { estado?: string };
+
+  if (estado !== "ABIERTA" && estado !== "CERRADA") {
+    throw new AppError("ESTADO_INVALIDO");
+  }
+
+  const cofradia = await cofradiaService.cambiarEstado(Number(cofradiaId), estado);
+
+  const cerrada = estado === "CERRADA";
+  return res.status(200).json({
+    message: cerrada
+      ? `Cofradía ${cofradia.anio} cerrada. Ya no admite cambios.`
+      : `Cofradía ${cofradia.anio} reabierta.`,
+    cofradia,
+  });
+};
