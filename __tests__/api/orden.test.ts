@@ -29,6 +29,10 @@ async function contexto() {
   return { token, abierta };
 }
 
+/** Token único por ejecución: el nombre del cortejo temporal debe ser distinto
+ *  en cada pasada, o choca con el que dejó la anterior. */
+const EJECUCION = Date.now().toString(36);
+
 const ordenados = (res: request.Response, campo = "cortejos") =>
   res.body[campo].map((e: { orden: number }) => e.orden);
 
@@ -62,23 +66,28 @@ describe("Reordenar cortejos", () => {
     const ids = antes.body.map((c: { id: number }) => c.id);
     const invertido = [...ids].reverse();
 
-    const res = await request(app)
-      .patch(`/api/v1/cofradias/${abierta.id}/cortejos/orden`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({ ids: invertido });
+    try {
+      const res = await request(app)
+        .patch(`/api/v1/cofradias/${abierta.id}/cortejos/orden`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ids: invertido });
 
-    expect(res.status).toBe(200);
-    expect(res.body.cortejos.map((c: { id: number }) => c.id)).toEqual(invertido);
-    expect(ordenados(res)).toEqual([1, 2, 3, 4, 5].slice(0, ids.length));
+      expect(res.status).toBe(200);
+      expect(res.body.cortejos.map((c: { id: number }) => c.id)).toEqual(invertido);
+      // 1..n sin huecos, sea cual sea el número de cortejos del seed.
+      expect(ordenados(res)).toEqual(ids.map((_: number, i: number) => i + 1));
 
-    // El orden persiste: una recarga devuelve lo mismo.
-    const despues = await request(app)
-      .get(`/api/v1/cofradias/${abierta.id}/cortejos`)
-      .set("Authorization", `Bearer ${token}`);
+      // El orden persiste: una recarga devuelve lo mismo.
+      const despues = await request(app)
+        .get(`/api/v1/cofradias/${abierta.id}/cortejos`)
+        .set("Authorization", `Bearer ${token}`);
 
-    expect(despues.body.map((c: { id: number }) => c.id)).toEqual(invertido);
-
-    await restaurarOrden(token, abierta.id, antes.body[0].id, ids, []);
+      expect(despues.body.map((c: { id: number }) => c.id)).toEqual(invertido);
+    } finally {
+      // Se restaura siempre: si una aserción falla a mitad, el seed no
+      // puede quedar desordenado para el siguiente test.
+      await restaurarOrden(token, abierta.id, antes.body[0].id, ids, []);
+    }
   });
 
   it("rechaza una lista con menos elementos de los guardados", async () => {
@@ -148,27 +157,30 @@ describe("Reordenar tramos", () => {
     // Mover el último al principio.
     const movido = [tramoIds[tramoIds.length - 1], ...tramoIds.slice(0, -1)];
 
-    const res = await request(app)
-      .patch(`/api/v1/cofradias/${abierta.id}/cortejos/${cortejoId}/tramos/orden`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({ ids: movido });
+    try {
+      const res = await request(app)
+        .patch(`/api/v1/cofradias/${abierta.id}/cortejos/${cortejoId}/tramos/orden`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ids: movido });
 
-    expect(res.status).toBe(200);
-    expect(res.body.tramos.map((t: { id: number }) => t.id)).toEqual(movido);
+      expect(res.status).toBe(200);
+      expect(res.body.tramos.map((t: { id: number }) => t.id)).toEqual(movido);
 
-    const despues = await request(app)
-      .get(`/api/v1/cofradias/${abierta.id}/cortejos/${cortejoId}/tramos`)
-      .set("Authorization", `Bearer ${token}`);
+      const despues = await request(app)
+        .get(`/api/v1/cofradias/${abierta.id}/cortejos/${cortejoId}/tramos`)
+        .set("Authorization", `Bearer ${token}`);
 
-    expect(despues.body.map((t: { id: number }) => t.id)).toEqual(movido);
-
-    await restaurarOrden(
-      token,
-      abierta.id,
-      cortejoId,
-      cortejos.body.map((c: { id: number }) => c.id),
-      tramoIds,
-    );
+      expect(despues.body.map((t: { id: number }) => t.id)).toEqual(movido);
+    } finally {
+      // Igual que arriba: el seed se devuelve siempre a su orden.
+      await restaurarOrden(
+        token,
+        abierta.id,
+        cortejoId,
+        cortejos.body.map((c: { id: number }) => c.id),
+        tramoIds,
+      );
+    }
   });
 
   it("rechaza ids de un cortejo distinto", async () => {
@@ -178,20 +190,47 @@ describe("Reordenar tramos", () => {
       .get(`/api/v1/cofradias/${abierta.id}/cortejos`)
       .set("Authorization", `Bearer ${token}`);
 
-    const otroCortejoId = cortejos.body[1]?.id ?? cortejos.body[0].id;
+    const origenId = cortejos.body[0].id as number;
 
     const tramos = await request(app)
-      .get(`/api/v1/cofradias/${abierta.id}/cortejos/${cortejos.body[0].id}/tramos`)
+      .get(`/api/v1/cofradias/${abierta.id}/cortejos/${origenId}/tramos`)
       .set("Authorization", `Bearer ${token}`);
     const tramoIds = tramos.body.map((t: { id: number }) => t.id);
 
-    const res = await request(app)
-      .patch(`/api/v1/cofradias/${abierta.id}/cortejos/${otroCortejoId}/tramos/orden`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({ ids: tramoIds });
+    // Hace falta un segundo cortejo contra el que probar. Con el seed no
+    // se puede dar por hecho: si solo hubiera uno, la lista enviaría
+    // sería la del propio cortejo, el reordenado sería válido y el
+    // test passing por el motivo equivocado.
+    let destinoId = cortejos.body.find((c: { id: number }) => c.id !== origenId)?.id as
+      | number
+      | undefined;
+    let temporal: number | undefined;
 
-    // O el cortejo no existe, o sus tramos no son los enviados.
-    expect([400, 404]).toContain(res.status);
+    if (destinoId === undefined) {
+      const creado = await request(app)
+        .post(`/api/v1/cofradias/${abierta.id}/cortejos`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ nombre: `Cortejo temporal ${EJECUCION}` });
+      destinoId = creado.body.cortejo.id as number;
+      temporal = destinoId;
+    }
+
+    try {
+      const res = await request(app)
+        .patch(`/api/v1/cofradias/${abierta.id}/cortejos/${destinoId}/tramos/orden`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ids: tramoIds });
+
+      // Los tramos son de otro cortejo, así que la lista no cuadra.
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("ORDENES_INVALIDOS");
+    } finally {
+      if (temporal) {
+        await request(app)
+          .delete(`/api/v1/cofradias/${abierta.id}/cortejos/${temporal}`)
+          .set("Authorization", `Bearer ${token}`);
+      }
+    }
   });
 
   it("no deja que un AUXILIAR reordene los tramos", async () => {
