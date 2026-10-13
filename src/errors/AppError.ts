@@ -30,6 +30,11 @@ export const ERROR_CATALOG = {
   // ── 409 · Conflicto de estado ──────────────────────────────────
   COFRADIA_CERRADA: { status: 409, message: "La cofradía está cerrada y no admite cambios" },
   NOMBRE_DUPLICADO: { status: 409, message: "Ya existe un registro con ese nombre" },
+  YA_SOLO_HAY_UNO: {
+    status: 409,
+    message: "Este hermano ya tiene una petición de este tipo en esta cofradía",
+  },
+  SIN_PLAZAS_LIBRES: { status: 409, message: "No quedan plazas libres para esa petición" },
 
   // ── 400 · Petición inválida ────────────────────────────────────
   // 400 y no 401 a propósito: el interceptor de axios del frontend
@@ -42,7 +47,15 @@ export const ERROR_CATALOG = {
   TRAMO_NOT_BELONG_TO_CORTEJO: { status: 400, message: "El tramo no pertenece al cortejo" },
   ORDENES_INVALIDOS: { status: 400, message: "La lista de orden recibida no es válida" },
   ESTADO_INVALIDO: { status: 400, message: "El estado indicado no es válido" },
-  CANTIDAD_INVALIDA: { status: 400, message: "La cantidad de plazas indicada no es válida" },
+  PLAZAS_INVALIDAS: { status: 400, message: "El número de plazas indicado no es válido" },
+  TRAMO_SIN_ESE_ELEMENTO: {
+    status: 400,
+    message: "Ese elemento no está asignado al tramo indicado",
+  },
+  HERMANO_NOT_IN_COFRADIA: {
+    status: 400,
+    message: "El hermano no pertenece a esta hermandad",
+  },
   INSIGNIA_NOT_BELONG_TO_COFRADIA: { status: 400, message: "La insignia no pertenece a la cofradía" },
   INVALID_OR_EXPIRED_TOKEN: { status: 400, message: "El enlace no es válido o ha caducado" },
   INVALID_OLD_PASSWORD: { status: 401, message: "La contraseña actual no es correcta" },

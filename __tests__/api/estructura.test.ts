@@ -49,6 +49,13 @@ async function limpiar(token: string, cofradiaId: number, cortejoId: number) {
     .set("Authorization", `Bearer ${token}`);
 }
 
+const puestoIdDe = async (token: string, cofradiaId: number) => {
+  const res = await request(app)
+    .get(`/api/v1/cofradias/${cofradiaId}/puestos`)
+    .set("Authorization", `Bearer ${token}`);
+  return res.body[0]?.id as number;
+};
+
 const insigniaIdDe = async (token: string, cofradiaId: number) => {
   const res = await request(app)
     .get(`/api/v1/cofradias/${cofradiaId}/insignias`)
@@ -73,7 +80,7 @@ describe("Asignar insignias y cargos a un tramo", () => {
       const res = await request(app)
         .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/insignias`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ insigniaIds: [insigniaId] });
+        .send({ insignias: [{ id: insigniaId }] });
 
       expect(res.status).toBe(200);
       expect(res.body.insignias.map((i: { id: number }) => i.id)).toContain(insigniaId);
@@ -99,17 +106,17 @@ describe("Asignar insignias y cargos a un tramo", () => {
       const res = await request(app)
         .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/cargos`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ cargos: [{ id: cargoId, cantidad: 3 }] });
+        .send({ cargos: [{ id: cargoId, plazas: 3 }] });
 
       expect(res.status).toBe(200);
-      expect(res.body.cargos[0].cantidad).toBe(3);
+      expect(res.body.cargos[0].plazas).toBe(3);
 
       const procesion = await request(app)
         .get(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/procesion`)
         .set("Authorization", `Bearer ${token}`);
 
       const tramo = procesion.body.tramos.find((t: { id: number }) => t.id === tramoId);
-      expect(tramo.cargos.find((c: { id: number }) => c.id === cargoId).cantidad).toBe(3);
+      expect(tramo.cargos.find((c: { id: number }) => c.id === cargoId).plazas).toBe(3);
     } finally {
       await limpiar(token, cofradiaId, cortejoId);
     }
@@ -124,13 +131,13 @@ describe("Asignar insignias y cargos a un tramo", () => {
       await request(app)
         .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/insignias`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ insigniaIds: [insigniaId] });
+        .send({ insignias: [{ id: insigniaId }] });
 
       // Se manda la lista completa, así que vaciar la deja limpia.
       const res = await request(app)
         .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/insignias`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ insigniaIds: [] });
+        .send({ insignias: [] });
 
       expect(res.status).toBe(200);
       expect(res.body.insignias).toEqual([]);
@@ -147,7 +154,7 @@ describe("Asignar insignias y cargos a un tramo", () => {
       const res = await request(app)
         .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/insignias`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ insigniaIds: [99999999] });
+        .send({ insignias: [{ id: 99999999 }] });
 
       expect(res.status).toBe(400);
     } finally {
@@ -163,7 +170,7 @@ describe("Asignar insignias y cargos a un tramo", () => {
       const res = await request(app)
         .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/99999999/insignias`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ insigniaIds: [] });
+        .send({ insignias: [] });
 
       expect(res.status).toBe(404);
     } finally {
@@ -186,7 +193,7 @@ describe("Asignar insignias y cargos a un tramo", () => {
     const res = await request(app)
       .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/insignias`)
       .set("Authorization", `Bearer ${tokenAux}`)
-      .send({ insigniaIds: [] });
+      .send({ insignias: [] });
 
     expect(res.status).toBe(403);
 
@@ -203,7 +210,7 @@ describe("Estructura y borrado", () => {
     await request(app)
       .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/insignias`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ insigniaIds: [insigniaId] });
+      .send({ insignias: [{ id: insigniaId }] });
 
     const borrado = await request(app)
       .delete(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}`)
@@ -220,7 +227,7 @@ describe("Estructura y borrado", () => {
     await limpiar(token, cofradiaId, cortejoId);
   });
 });
-describe("Plazas por cargo", () => {
+describe("Plazas por elemento", () => {
   it("acepta varias plazas del mismo cargo en un tramo", async () => {
     const { token, cofradiaId } = await contexto();
     const { cortejoId, tramoId } = await armazon(token, cofradiaId);
@@ -230,17 +237,17 @@ describe("Plazas por cargo", () => {
       const res = await request(app)
         .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/cargos`)
         .set("Authorization", `Bearer ${token}`)
-        .send({ cargos: [{ id: cargoId, cantidad: 5 }] });
+        .send({ cargos: [{ id: cargoId, plazas: 5 }] });
 
       expect(res.status).toBe(200);
       expect(res.body.cargos).toHaveLength(1);
-      expect(res.body.cargos[0].cantidad).toBe(5);
+      expect(res.body.cargos[0].plazas).toBe(5);
     } finally {
       await limpiar(token, cofradiaId, cortejoId);
     }
   });
 
-  it("sin cantidad, el cargo ocupa una plaza", async () => {
+  it("sin plazas, el elemento ocupa una", async () => {
     const { token, cofradiaId } = await contexto();
     const { cortejoId, tramoId } = await armazon(token, cofradiaId);
     const cargoId = await cargoIdDe(token, cofradiaId);
@@ -252,27 +259,57 @@ describe("Plazas por cargo", () => {
         .send({ cargos: [{ id: cargoId }] });
 
       expect(res.status).toBe(200);
-      expect(res.body.cargos[0].cantidad).toBe(1);
+      expect(res.body.cargos[0].plazas).toBe(1);
     } finally {
       await limpiar(token, cofradiaId, cortejoId);
     }
   });
 
-  it("rechaza una cantidad que no sea un entero de 1 a 999", async () => {
+  it("rechaza unas plazas que no sean un entero de 1 a 999", async () => {
     const { token, cofradiaId } = await contexto();
     const { cortejoId, tramoId } = await armazon(token, cofradiaId);
     const cargoId = await cargoIdDe(token, cofradiaId);
 
     try {
-      for (const cantidad of [0, -1, 2.5, 1000]) {
+      for (const plazas of [0, -1, 2.5, 1000]) {
         const res = await request(app)
           .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/cargos`)
           .set("Authorization", `Bearer ${token}`)
-          .send({ cargos: [{ id: cargoId, cantidad }] });
+          .send({ cargos: [{ id: cargoId, plazas }] });
 
         expect(res.status).toBe(400);
-        expect(res.body.error).toBe("CANTIDAD_INVALIDA");
+        expect(res.body.error).toBe("PLAZAS_INVALIDAS");
       }
+    } finally {
+      await limpiar(token, cofradiaId, cortejoId);
+    }
+  });
+
+  it("los puestos también llevan plazas, y son una clase más", async () => {
+    const { token, cofradiaId } = await contexto();
+    const { cortejoId, tramoId } = await armazon(token, cofradiaId);
+
+    const puestoId = await puestoIdDe(token, cofradiaId);
+    const insigniaId = await insigniaIdDe(token, cofradiaId);
+
+    try {
+      const res = await request(app)
+        .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/puestos`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ puestos: [{ id: puestoId, plazas: 10 }] });
+
+      expect(res.status).toBe(200);
+      expect(res.body.puestos[0]).toMatchObject({ id: puestoId, plazas: 10 });
+
+      // Y el mismo formato en las insignias: una Cruz de Guía son cinco
+      // personas aunque la pieza sea una.
+      const deInsignias = await request(app)
+        .put(`/api/v1/cofradias/${cofradiaId}/cortejos/${cortejoId}/tramos/${tramoId}/insignias`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ insignias: [{ id: insigniaId, plazas: 5 }] });
+
+      expect(deInsignias.status).toBe(200);
+      expect(deInsignias.body.insignias[0]).toMatchObject({ id: insigniaId, plazas: 5 });
     } finally {
       await limpiar(token, cofradiaId, cortejoId);
     }

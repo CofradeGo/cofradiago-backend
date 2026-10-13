@@ -2,8 +2,7 @@ import type { Request, Response } from "express";
 import { AppError } from "../errors/AppError.ts";
 import { tramoService } from "../services/tramos.service.ts";
 import {
-  asignarCargosATramo,
-  asignarInsigniasATramo,
+  asignarATramo,
 } from "../services/estructura.service.ts";
 import type { User } from "../models/user.model.ts";
 
@@ -150,86 +149,80 @@ export const reordenarTramos = async (req: Request, res: Response) => {
 };
 
 /* =====================================================
-   ASIGNAR INSIGNIAS Y CARGOS A UN TRAMO (DMG)
-   ===================================================== */
-const cuerpoDeIds = (req: Request, clave: string): number[] => {
-  const valor = (req.body as Record<string, unknown>)?.[clave];
-  if (!Array.isArray(valor)) return [];
-  // Se filtran los que sean enteros: un id suelto en la lista rompería
-  // la consulta sin decir por qué.
-  return valor.filter((v): v is number => typeof v === "number" && Number.isInteger(v));
-};
+    ASIGNAR INSIGNIAS, CARGOS Y PUESTOS A UN TRAMO (DMG)
+    ===================================================== */
 
 /**
- * Lee la lista de cargos con sus plazas.
+ * Lee la lista de elementos con sus plazas.
  *
- * La cantidad no viene si se omite, en cuyo caso es una plaza: un
- * tramo con un solo "Diputado de Cruz" no necesita decir que es una.
+ * Las plazas no vienen si se omiten, en cuyo caso es una: un tramo con
+ * un solo "Diputado de Cruz" no necesita decir que es una. Un NaN aquí
+ * lo rechaza la validación del servicio con un mensaje claro, mejor que
+ * guardarlo tal cual.
  */
-const cuerpoDeCargos = (req: Request): { id: number; cantidad: number }[] => {
-  const valor = (req.body as Record<string, unknown>)?.cargos;
+const cuerpoDeElementos = (req: Request, clave: string) => {
+  const valor = (req.body as Record<string, unknown>)?.[clave];
   if (!Array.isArray(valor)) return [];
 
   return valor
-    .filter((c): c is { id: number; cantidad?: number } =>
-      !!c && typeof (c as { id?: unknown }).id === "number",
+    .filter((e): e is { id: number; plazas?: number } =>
+      !!e && typeof (e as { id?: unknown }).id === "number",
     )
-    .map((c) => ({
-      id: Number(c.id),
-      // Un NaN aquí lo rechaza la validación del servicio con un
-      // mensaje claro, mejor que guardarlo tal cual.
-      cantidad: c.cantidad === undefined ? 1 : Number(c.cantidad),
+    .map((e) => ({
+      id: Number(e.id),
+      plazas: e.plazas === undefined ? 1 : Number(e.plazas),
     }));
 };
 
-/**
- * PUT /api/v1/cofradias/:cofradiaId/cortejos/:cortejoId/tramos/:tramoId/insignias
- * Guarda qué insignias van en el tramo. Se manda la lista completa.
- */
-export const asignarInsignias = async (req: Request, res: Response) => {
+/** Solo DMG cambia la estructura de la procesión. */
+const exigirDmg = (req: Request) => {
   const user = req.user as User | undefined;
-  if (!user) throw new AppError("ACCESS_DENIED", {
-      message: "Usuario no autenticado.",
-    });
-  if (user.role !== "DMG") throw new AppError("ACCESS_DENIED", {
+  if (!user) {
+    throw new AppError("ACCESS_DENIED", { message: "Usuario no autenticado." });
+  }
+  if (user.role !== "DMG") {
+    throw new AppError("ACCESS_DENIED", {
       message: "Solo DMG puede modificar la estructura de la procesión.",
     });
+  }
+};
 
+const idsDeRuta = (req: Request) => {
   const { cofradiaId, cortejoId, tramoId } = req.params;
   if (!cofradiaId || !cortejoId || !tramoId) throw new AppError("NO_VALID_FIELDS");
-
-  const insignias = await asignarInsigniasATramo(
-    Number(cofradiaId),
-    Number(cortejoId),
-    Number(tramoId),
-    cuerpoDeIds(req, "insigniaIds"),
-  );
-
-  return res.status(200).json({ message: "Insignias del tramo actualizadas.", insignias });
+  return {
+    cofradiaId: Number(cofradiaId),
+    cortejoId: Number(cortejoId),
+    tramoId: Number(tramoId),
+  };
 };
 
 /**
- * PUT /api/v1/cofradias/:cofradiaId/cortejos/:cortejoId/tramos/:tramoId/cargos
- * Guarda qué cargos van en el tramo. Se manda la lista completa.
+ * Los tres endpoints son el mismo con otro nombre: qué insignias, qué
+ * cargos o qué puestos van en el tramo, y cuántas plazas de cada uno.
+ * Se manda siempre la lista completa de lo que debe quedar.
  */
-export const asignarCargos = async (req: Request, res: Response) => {
-  const user = req.user as User | undefined;
-  if (!user) throw new AppError("ACCESS_DENIED", {
-      message: "Usuario no autenticado.",
+const endpointDeAsignacion =
+  (clase: "insignia" | "cargo" | "puesto", plural: string) =>
+  async (req: Request, res: Response) => {
+    exigirDmg(req);
+    const ids = idsDeRuta(req);
+
+    const elementos = await asignarATramo(
+      clase,
+      ids.cofradiaId,
+      ids.cortejoId,
+      ids.tramoId,
+      cuerpoDeElementos(req, `${clase}s`),
+    );
+
+    const clave = clase === "puesto" ? "puestos" : `${clase}s`;
+    return res.status(200).json({
+      message: `${plural.charAt(0).toUpperCase()}${plural.slice(1)} del tramo actualizadas.`,
+      [clave]: elementos,
     });
-  if (user.role !== "DMG") throw new AppError("ACCESS_DENIED", {
-      message: "Solo DMG puede modificar la estructura de la procesión.",
-    });
+  };
 
-  const { cofradiaId, cortejoId, tramoId } = req.params;
-  if (!cofradiaId || !cortejoId || !tramoId) throw new AppError("NO_VALID_FIELDS");
-
-  const cargos = await asignarCargosATramo(
-    Number(cofradiaId),
-    Number(cortejoId),
-    Number(tramoId),
-    cuerpoDeCargos(req),
-  );
-
-  return res.status(200).json({ message: "Cargos del tramo actualizados.", cargos });
-};
+export const asignarInsignias = endpointDeAsignacion("insignia", "insignias");
+export const asignarCargos = endpointDeAsignacion("cargo", "cargos");
+export const asignarPuestos = endpointDeAsignacion("puesto", "puestos");

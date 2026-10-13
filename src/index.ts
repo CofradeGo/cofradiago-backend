@@ -19,6 +19,7 @@ import insigniaRouter from "./routes/insignia.route.ts";
 import cargoRouter from "./routes/cargo.route.ts";
 import insigniaElementoRouter from "./routes/insigniaElemento.route.ts";
 import tramoRouter from "./routes/tramo.route.ts";
+import solicitudRouter from "./routes/solicitud.route.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,6 +52,8 @@ app.use("/api/v1/cofradia", cofradiaRouter);
 
 app.use("/api/v1/cofradias/:cofradiaId/cortejos", cortejosRouter);
 app.use("/api/v1/cofradias/:cofradiaId/cortejos", tramoRouter);
+// Peticiones de sitio de los hermanos, al mismo nivel que los tramos.
+app.use("/api/v1/cofradias/:cofradiaId/cortejos", solicitudRouter);
 
 app.use("/api/v1/cofradias", puestoRouter);
 app.use("/api/v1/cofradias", insigniaRouter);

@@ -89,6 +89,8 @@ model Hermano {
   updatedAt DateTime @updatedAt
 
   puestos    PuestoHermano[]
+  insignias   InsigniaHermano[]
+  cargos     CargoHermano[]
 
   @@unique([hermandadId, numeroAntiguedad])
 }
@@ -114,6 +116,19 @@ model Cofradia {
 enum CofradiaEstado {
   ABIERTA
   CERRADA
+}
+
+/**
+ * En qué se convierte una petición de sitio.
+ *
+ * Un hermano pide, la junta acepta o rechaza. `PENDIENTE` es el estado
+ * con el que se registra todo lo nuevo, así que nadie se incorpora a la
+ * procesión sin que alguien lo haya decidido.
+ */
+enum EstadoSolicitud {
+  PENDIENTE
+  ACEPTADA
+  RECHAZADA
 }
 
 model Cortejo {
@@ -155,6 +170,9 @@ model PuestoTramo {
   puestoId Int
   tramoId  Int
 
+  /** Cuántas personas hacen falta para este puesto en este tramo. */
+  plazas Int @default(1)
+
   puesto Puesto @relation(fields: [puestoId], references: [id], onDelete: Cascade)
   tramo  Tramo  @relation(fields: [tramoId], references: [id], onDelete: Cascade)
 
@@ -180,6 +198,10 @@ model PuestoHermano {
   hermanoId  Int
   tramoId    Int
   cofradiaId Int
+  /** PENDIENTE hasta que la junta acepta o rechaza la petición. */
+  estado     EstadoSolicitud @default(PENDIENTE)
+  /** Por qué se rechazó, o el acuerdo al que se llegó al aceptarla. */
+  notas      String?
 
   puesto  Puesto  @relation(fields: [puestoId], references: [id], onDelete: Cascade)
   hermano Hermano @relation(fields: [hermanoId], references: [id], onDelete: Cascade)
@@ -190,6 +212,58 @@ model PuestoHermano {
   @@unique([hermanoId, cofradiaId])
   @@index([cofradiaId])
   @@index([tramoId])
+  @@index([estado])
+}
+
+/**
+ * Hermanos que piden llevar una insignia en un tramo.
+ *
+ * Mismo criterio que `PuestoHermano`: una persona, una insignia y un
+ * tramo por cofradía. Las tres clases de petición son independientes,
+ * así que un hermano puede pedir a la vez un puesto, una insignia y un
+ * cargo, que es lo que se acordaba al montar la estructura.
+ */
+model InsigniaHermano {
+  id         Int      @id @default(autoincrement())
+  insigniaId Int
+  hermanoId  Int
+  tramoId    Int
+  cofradiaId Int
+  estado     EstadoSolicitud @default(PENDIENTE)
+  notas      String?
+
+  insignia Insignia @relation(fields: [insigniaId], references: [id], onDelete: Cascade)
+  hermano  Hermano  @relation(fields: [hermanoId], references: [id], onDelete: Cascade)
+  tramo    Tramo    @relation(fields: [tramoId], references: [id], onDelete: Cascade)
+
+  @@unique([insigniaId, hermanoId])
+  @@unique([hermanoId, cofradiaId])
+  @@index([cofradiaId])
+  @@index([tramoId])
+  @@index([estado])
+}
+
+/**
+ * Hermanos que piden un cargo en un tramo. Igual que los otros dos.
+ */
+model CargoHermano {
+  id         Int      @id @default(autoincrement())
+  cargoId    Int
+  hermanoId  Int
+  tramoId    Int
+  cofradiaId Int
+  estado     EstadoSolicitud @default(PENDIENTE)
+  notas      String?
+
+  cargo   Cargo   @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+  hermano Hermano @relation(fields: [hermanoId], references: [id], onDelete: Cascade)
+  tramo   Tramo   @relation(fields: [tramoId], references: [id], onDelete: Cascade)
+
+  @@unique([cargoId, hermanoId])
+  @@unique([hermanoId, cofradiaId])
+  @@index([cofradiaId])
+  @@index([tramoId])
+  @@index([estado])
 }
 
 model Insignia {
@@ -206,17 +280,26 @@ model Insignia {
   @@unique([cofradiaId, nombre])
   cortejos Cortejo[]
   tramos    InsigniaTramo[]
+  hermanos  InsigniaHermano[]
 }
 
 /**
- * En qué tramos de la procesión sale una insignia.
+ * En qué tramos de la procesión sale una insignia, y con cuántas
+ * personas.
  *
  * N:M porque un mismo estandarte puede abrir dos cortejos o quedar en
  * dos tramos, igual que un puesto.
+ *
+ * `plazas` cuenta a los que la llevan, no a las insignias: hay una sola
+ * Cruz de Guía, pero la cargan cinco personas. La insignia sigue siendo
+ * una pieza física única.
  */
 model InsigniaTramo {
   insigniaId Int
   tramoId    Int
+
+  /** Cuántas personas llevan esta insignia en este tramo. */
+  plazas Int @default(1)
 
   insignia Insignia @relation(fields: [insigniaId], references: [id], onDelete: Cascade)
   tramo    Tramo    @relation(fields: [tramoId], references: [id], onDelete: Cascade)
@@ -254,6 +337,8 @@ model Tramo {
   hermanos    PuestoHermano[]
   insignias   InsigniaTramo[]
   cargos      CargoTramo[]
+  insigniasDeHermanos InsigniaHermano[]
+  cargosDeHermanos    CargoHermano[]
   // Aquí más relaciones si luego asignamos cargos o insignias
 }
 
@@ -269,12 +354,13 @@ model Cargo {
 
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
   tramos      CargoTramo[]
+  hermanos    CargoHermano[]
 
   @@unique([cofradiaId, nombre])
 }
 
 /**
- * En qué tramos va un cargo de la hermandad.
+ * En qué tramos va un cargo de la hermandad, y con cuántas personas.
  *
  * N:M por lo mismo que en las insignias: un cargo puede repartirse en
  * varios tramos de la procesión.
@@ -284,18 +370,17 @@ model CargoTramo {
   tramoId Int
 
   /**
-   * Cuántas plazas de ese cargo hay en el tramo.
+   * Cuántas personas hacen falta para este cargo en este tramo.
    *
    * Al montar la estructura se sabe cuántos son aunque todavía no
    * quiénes: un tramo puede tener tres diputados de tramo y aún no
-   * estar decidedos. Quién ocupa cada plaza lo that'llenar el módulo
-   * de papeleta de sitio.
+   * estar decididos. Quién ocupa cada plaza lo rellena el módulo de
+   * papeleta de sitio.
    *
-   * Las insignias no llevan cantidad: un estandarte es una pieza
-   * física, y las varias personas que lo llevan son hermanos, no tres
-   * insignias iguales.
+   * Se llama igual que en puestos e insignias porque significa lo
+   * mismo en las tres: personas, no piezas.
    */
-  cantidad Int @default(1)
+  plazas Int @default(1)
 
   cargo Cargo @relation(fields: [cargoId], references: [id], onDelete: Cascade)
   tramo Tramo @relation(fields: [tramoId], references: [id], onDelete: Cascade)
