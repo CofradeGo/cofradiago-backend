@@ -226,7 +226,12 @@ model Tramo {
   updatedAt   DateTime  @default(now()) @updatedAt
 
   cofradia    Cofradia  @relation(fields: [cofradiaId], references: [id])
-  cortejo     Cortejo   @relation(fields: [cortejoId], references: [id])
+  // En cascada: los tramos son parte del cortejo, no una entidad aparte.
+  // Sin esto, borrar un cortejo con tramos falla con "Foreign key
+  // constraint violated", que es lo que pasaba. La cascada arrastra
+  // también las asignaciones de puestos de esos tramos, porque quién
+  // ocupa un puesto en un tramo que ya no existe no significa nada.
+  cortejo     Cortejo   @relation(fields: [cortejoId], references: [id], onDelete: Cascade)
   puestos     PuestoTramo[]
   hermanos    PuestoHermano[]
   // Aquí más relaciones si luego asignamos cargos o insignias
