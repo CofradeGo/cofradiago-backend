@@ -161,6 +161,28 @@ const cuerpoDeIds = (req: Request, clave: string): number[] => {
 };
 
 /**
+ * Lee la lista de cargos con sus plazas.
+ *
+ * La cantidad no viene si se omite, en cuyo caso es una plaza: un
+ * tramo con un solo "Diputado de Cruz" no necesita decir que es una.
+ */
+const cuerpoDeCargos = (req: Request): { id: number; cantidad: number }[] => {
+  const valor = (req.body as Record<string, unknown>)?.cargos;
+  if (!Array.isArray(valor)) return [];
+
+  return valor
+    .filter((c): c is { id: number; cantidad?: number } =>
+      !!c && typeof (c as { id?: unknown }).id === "number",
+    )
+    .map((c) => ({
+      id: Number(c.id),
+      // Un NaN aquí lo rechaza la validación del servicio con un
+      // mensaje claro, mejor que guardarlo tal cual.
+      cantidad: c.cantidad === undefined ? 1 : Number(c.cantidad),
+    }));
+};
+
+/**
  * PUT /api/v1/cofradias/:cofradiaId/cortejos/:cortejoId/tramos/:tramoId/insignias
  * Guarda qué insignias van en el tramo. Se manda la lista completa.
  */
@@ -206,7 +228,7 @@ export const asignarCargos = async (req: Request, res: Response) => {
     Number(cofradiaId),
     Number(cortejoId),
     Number(tramoId),
-    cuerpoDeIds(req, "cargoIds"),
+    cuerpoDeCargos(req),
   );
 
   return res.status(200).json({ message: "Cargos del tramo actualizados.", cargos });

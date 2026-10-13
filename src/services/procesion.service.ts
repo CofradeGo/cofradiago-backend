@@ -36,6 +36,8 @@ export interface InsigniaEnTramo {
 export interface CargoEnTramo {
   id: number;
   nombre: string;
+  /** Cuántas plazas de ese cargo hay en el tramo. */
+  cantidad: number;
 }
 
 export interface TramoEnProcesion {
@@ -59,6 +61,11 @@ export interface Procesion {
     puestos: number;
     hermanos: number;
     insignias: number;
+    /**
+     * Plazas de cargo que suman todos los tramos, no número de cargos
+     * distintos: un tramo con tres diputados de tramo aporta tres
+     * plazas aunque sea un solo cargo.
+     */
     cargos: number;
   };
 }
@@ -100,7 +107,7 @@ export const procesionService = {
           select: { insignia: { select: { id: true, nombre: true, descripcion: true } } },
         },
         cargos: {
-          select: { cargo: { select: { id: true, nombre: true } } },
+          select: { cantidad: true, cargo: { select: { id: true, nombre: true } } },
         },
         hermanos: {
           select: {
@@ -158,7 +165,9 @@ export const procesionService = {
           a.nombre.localeCompare(b.nombre, "es"),
         ),
         insignias: porNombre(tramo.insignias.map((i) => i.insignia)),
-        cargos: porNombre(tramo.cargos.map((c) => c.cargo)),
+        cargos: porNombre(
+          tramo.cargos.map((c) => ({ ...c.cargo, cantidad: c.cantidad })),
+        ),
       };
     });
 
@@ -177,7 +186,10 @@ export const procesionService = {
           0,
         ),
         insignias: resultado.reduce((n, t) => n + t.insignias.length, 0),
-        cargos: resultado.reduce((n, t) => n + t.cargos.length, 0),
+        cargos: resultado.reduce(
+          (n, t) => n + t.cargos.reduce((m, c) => m + c.cantidad, 0),
+          0,
+        ),
       },
     };
   },

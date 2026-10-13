@@ -283,6 +283,20 @@ model CargoTramo {
   cargoId Int
   tramoId Int
 
+  /**
+   * Cuántas plazas de ese cargo hay en el tramo.
+   *
+   * Al montar la estructura se sabe cuántos son aunque todavía no
+   * quiénes: un tramo puede tener tres diputados de tramo y aún no
+   * estar decidedos. Quién ocupa cada plaza lo that'llenar el módulo
+   * de papeleta de sitio.
+   *
+   * Las insignias no llevan cantidad: un estandarte es una pieza
+   * física, y las varias personas que lo llevan son hermanos, no tres
+   * insignias iguales.
+   */
+  cantidad Int @default(1)
+
   cargo Cargo @relation(fields: [cargoId], references: [id], onDelete: Cascade)
   tramo Tramo @relation(fields: [tramoId], references: [id], onDelete: Cascade)
 

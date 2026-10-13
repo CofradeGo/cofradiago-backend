@@ -55,24 +55,43 @@ export const asignarInsigniasATramo = async (
   });
 };
 
-/** Guarda qué cargos tiene un tramo. Mismo criterio que las insignias. */
+/** Tope de plazas por cargo, por si alguien manda un disparate. */
+const MAX_PLAZAS = 999;
+
+/**
+ * Guarda qué cargos tiene un tramo y cuántas plazas hay de cada uno.
+ *
+ * La cantidad es cuántas personas hacen falta, no cuántas hay ya: al
+ * montar la estructura se sabe que hacen falta tres diputados de
+ * tramo aunque todavía no se sepa quiénes. Quién ocupa cada plaza lo
+ * rellena el módulo de papeleta de sitio.
+ */
 export const asignarCargosATramo = async (
   cofradiaId: number,
   cortejoId: number,
   tramoId: number,
-  cargoIds: number[],
+  cargos: { id: number; cantidad: number }[],
 ) => {
   await obtenerCofradiaEditable(cofradiaId);
   await asegurarTramoPertenece(cofradiaId, cortejoId, tramoId);
 
-  const propios = cargoIds.length
+  for (const { cantidad } of cargos) {
+    if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > MAX_PLAZAS) {
+      throw new AppError("CANTIDAD_INVALIDA", {
+        message: `Las plazas de cada cargo deben ser un número entero entre 1 y ${MAX_PLAZAS}.`,
+      });
+    }
+  }
+
+  const ids = cargos.map((c) => c.id);
+  const propios = ids.length
     ? await prisma.cargo.findMany({
-        where: { cofradiaId, id: { in: cargoIds } },
+        where: { cofradiaId, id: { in: ids } },
         select: { id: true },
       })
     : [];
 
-  if (propios.length !== cargoIds.length) {
+  if (propios.length !== ids.length) {
     throw new AppError("NO_VALID_FIELDS", {
       message: "Alguno de los cargos indicados no existe en esta cofradía.",
     });
@@ -80,14 +99,14 @@ export const asignarCargosATramo = async (
 
   await prisma.$transaction([
     prisma.cargoTramo.deleteMany({ where: { tramoId } }),
-    ...propios.map(({ id }) =>
-      prisma.cargoTramo.create({ data: { cargoId: id, tramoId } }),
+    ...cargos.map(({ id, cantidad }) =>
+      prisma.cargoTramo.create({ data: { cargoId: id, tramoId, cantidad } }),
     ),
   ]);
 
-  return prisma.cargo.findMany({
-    where: { id: { in: propios.map((c) => c.id) } },
-    orderBy: { nombre: "asc" },
+  return prisma.cargoTramo.findMany({
+    where: { tramoId },
+    include: { cargo: true },
   });
 };
 
