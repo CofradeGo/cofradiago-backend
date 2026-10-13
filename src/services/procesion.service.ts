@@ -25,11 +25,26 @@ export interface PuestoEnTramo {
   hermanos: HermanoEnPuesto[];
 }
 
+/** Insignia asignada a un tramo. Sin personas todavía: eso llega con
+ *  el módulo de papeleta de sitio. */
+export interface InsigniaEnTramo {
+  id: number;
+  nombre: string;
+  descripcion?: string | null;
+}
+
+export interface CargoEnTramo {
+  id: number;
+  nombre: string;
+}
+
 export interface TramoEnProcesion {
   id: number;
   nombre: string;
   orden: number;
   puestos: PuestoEnTramo[];
+  insignias: InsigniaEnTramo[];
+  cargos: CargoEnTramo[];
 }
 
 export interface Procesion {
@@ -43,6 +58,8 @@ export interface Procesion {
     tramos: number;
     puestos: number;
     hermanos: number;
+    insignias: number;
+    cargos: number;
   };
 }
 
@@ -78,6 +95,12 @@ export const procesionService = {
           select: {
             puesto: { select: { id: true, nombre: true } },
           },
+        },
+        insignias: {
+          select: { insignia: { select: { id: true, nombre: true, descripcion: true } } },
+        },
+        cargos: {
+          select: { cargo: { select: { id: true, nombre: true } } },
         },
         hermanos: {
           select: {
@@ -124,6 +147,9 @@ export const procesionService = {
         puesto.hermanos.sort((a, b) => b.numeroAntiguedad - a.numeroAntiguedad);
       }
 
+      const porNombre = <T extends { nombre: string }>(xs: T[]) =>
+        [...xs].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
       return {
         id: tramo.id,
         nombre: tramo.nombre,
@@ -131,6 +157,8 @@ export const procesionService = {
         puestos: [...porPuesto.values()].sort((a, b) =>
           a.nombre.localeCompare(b.nombre, "es"),
         ),
+        insignias: porNombre(tramo.insignias.map((i) => i.insignia)),
+        cargos: porNombre(tramo.cargos.map((c) => c.cargo)),
       };
     });
 
@@ -148,6 +176,8 @@ export const procesionService = {
           (n, t) => n + t.puestos.reduce((m, p) => m + p.hermanos.length, 0),
           0,
         ),
+        insignias: resultado.reduce((n, t) => n + t.insignias.length, 0),
+        cargos: resultado.reduce((n, t) => n + t.cargos.length, 0),
       },
     };
   },

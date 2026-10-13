@@ -12,6 +12,20 @@ const router = Router({ mergeParams: true });
  */
 router.patch("/:cortejoId/tramos/orden", authMiddleware, tramoController.reordenarTramos);
 
+// Qué insignias y qué cargos van en cada tramo (solo DMG). Antes que
+// "/:cortejoId/tramos/:tramoId" para que Express no lea "insignias"
+// como si fuera el id de un tramo.
+router.put(
+  "/:cortejoId/tramos/:tramoId/insignias",
+  authMiddleware,
+  tramoController.asignarInsignias,
+);
+router.put(
+  "/:cortejoId/tramos/:tramoId/cargos",
+  authMiddleware,
+  tramoController.asignarCargos,
+);
+
 router.post("/:cortejoId/tramos", authMiddleware, tramoController.crearTramo);
 router.get("/:cortejoId/tramos", authMiddleware, tramoController.listTramos);
 router.put("/:cortejoId/tramos/:tramoId", authMiddleware, tramoController.editarTramo);

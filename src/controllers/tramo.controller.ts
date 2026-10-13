@@ -1,6 +1,10 @@
 import type { Request, Response } from "express";
 import { AppError } from "../errors/AppError.ts";
 import { tramoService } from "../services/tramos.service.ts";
+import {
+  asignarCargosATramo,
+  asignarInsigniasATramo,
+} from "../services/estructura.service.ts";
 import type { User } from "../models/user.model.ts";
 
 /* =====================================================
@@ -143,4 +147,67 @@ export const reordenarTramos = async (req: Request, res: Response) => {
     message: "Orden de los tramos actualizado.",
     tramos,
   });
+};
+
+/* =====================================================
+   ASIGNAR INSIGNIAS Y CARGOS A UN TRAMO (DMG)
+   ===================================================== */
+const cuerpoDeIds = (req: Request, clave: string): number[] => {
+  const valor = (req.body as Record<string, unknown>)?.[clave];
+  if (!Array.isArray(valor)) return [];
+  // Se filtran los que sean enteros: un id suelto en la lista rompería
+  // la consulta sin decir por qué.
+  return valor.filter((v): v is number => typeof v === "number" && Number.isInteger(v));
+};
+
+/**
+ * PUT /api/v1/cofradias/:cofradiaId/cortejos/:cortejoId/tramos/:tramoId/insignias
+ * Guarda qué insignias van en el tramo. Se manda la lista completa.
+ */
+export const asignarInsignias = async (req: Request, res: Response) => {
+  const user = req.user as User | undefined;
+  if (!user) throw new AppError("ACCESS_DENIED", {
+      message: "Usuario no autenticado.",
+    });
+  if (user.role !== "DMG") throw new AppError("ACCESS_DENIED", {
+      message: "Solo DMG puede modificar la estructura de la procesión.",
+    });
+
+  const { cofradiaId, cortejoId, tramoId } = req.params;
+  if (!cofradiaId || !cortejoId || !tramoId) throw new AppError("NO_VALID_FIELDS");
+
+  const insignias = await asignarInsigniasATramo(
+    Number(cofradiaId),
+    Number(cortejoId),
+    Number(tramoId),
+    cuerpoDeIds(req, "insigniaIds"),
+  );
+
+  return res.status(200).json({ message: "Insignias del tramo actualizadas.", insignias });
+};
+
+/**
+ * PUT /api/v1/cofradias/:cofradiaId/cortejos/:cortejoId/tramos/:tramoId/cargos
+ * Guarda qué cargos van en el tramo. Se manda la lista completa.
+ */
+export const asignarCargos = async (req: Request, res: Response) => {
+  const user = req.user as User | undefined;
+  if (!user) throw new AppError("ACCESS_DENIED", {
+      message: "Usuario no autenticado.",
+    });
+  if (user.role !== "DMG") throw new AppError("ACCESS_DENIED", {
+      message: "Solo DMG puede modificar la estructura de la procesión.",
+    });
+
+  const { cofradiaId, cortejoId, tramoId } = req.params;
+  if (!cofradiaId || !cortejoId || !tramoId) throw new AppError("NO_VALID_FIELDS");
+
+  const cargos = await asignarCargosATramo(
+    Number(cofradiaId),
+    Number(cortejoId),
+    Number(tramoId),
+    cuerpoDeIds(req, "cargoIds"),
+  );
+
+  return res.status(200).json({ message: "Cargos del tramo actualizados.", cargos });
 };

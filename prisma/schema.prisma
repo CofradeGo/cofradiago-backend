@@ -199,12 +199,30 @@ model Insignia {
   descripcion String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
-
+  
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
   elementos   InsigniaElemento[]
-
+  
   @@unique([cofradiaId, nombre])
   cortejos Cortejo[]
+  tramos    InsigniaTramo[]
+}
+
+/**
+ * En qué tramos de la procesión sale una insignia.
+ *
+ * N:M porque un mismo estandarte puede abrir dos cortejos o quedar en
+ * dos tramos, igual que un puesto.
+ */
+model InsigniaTramo {
+  insigniaId Int
+  tramoId    Int
+
+  insignia Insignia @relation(fields: [insigniaId], references: [id], onDelete: Cascade)
+  tramo    Tramo    @relation(fields: [tramoId], references: [id], onDelete: Cascade)
+
+  @@id([insigniaId, tramoId])
+  @@index([tramoId])
 }
 
 model InsigniaElemento {
@@ -234,6 +252,8 @@ model Tramo {
   cortejo     Cortejo   @relation(fields: [cortejoId], references: [id], onDelete: Cascade)
   puestos     PuestoTramo[]
   hermanos    PuestoHermano[]
+  insignias   InsigniaTramo[]
+  cargos      CargoTramo[]
   // Aquí más relaciones si luego asignamos cargos o insignias
 }
 
@@ -248,7 +268,25 @@ model Cargo {
   updatedAt   DateTime @updatedAt
 
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
+  tramos      CargoTramo[]
 
   @@unique([cofradiaId, nombre])
+}
+
+/**
+ * En qué tramos va un cargo de la hermandad.
+ *
+ * N:M por lo mismo que en las insignias: un cargo puede repartirse en
+ * varios tramos de la procesión.
+ */
+model CargoTramo {
+  cargoId Int
+  tramoId Int
+
+  cargo Cargo @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+  tramo Tramo @relation(fields: [tramoId], references: [id], onDelete: Cascade)
+
+  @@id([cargoId, tramoId])
+  @@index([tramoId])
 }
 
