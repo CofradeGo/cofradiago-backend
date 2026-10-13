@@ -7,6 +7,7 @@ import {
   reordenarCortejos 
 } from "../controllers/cortejo.controller.ts";
 import { authMiddleware } from "../middleware/authMiddleware.ts";
+import { obtenerProcesion } from "../controllers/procesion.controller.ts";
 
 const router = Router({ mergeParams: true });
 
@@ -23,6 +24,9 @@ router.post("/", authMiddleware, crearCortejo);
 
 // Listar cortejos de una cofradía (DMG y AUX pueden consultar)
 router.get("/", authMiddleware, listCortejosByCofradia);
+
+// Procesión completa: tramos, puestos y hermanos. DMG y AUX.
+router.get("/:cortejoId/procesion", authMiddleware, obtenerProcesion);
 
 // Editar cortejo por ID (solo DMG)
 router.put("/:cortejoId", authMiddleware, editarCortejo);

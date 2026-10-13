@@ -88,6 +88,8 @@ model Hermano {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  puestos    PuestoHermano[]
+
   @@unique([hermandadId, numeroAntiguedad])
 }
 
@@ -138,6 +140,56 @@ model Puesto {
   updatedAt   DateTime @updatedAt
 
   cofradia    Cofradia @relation(fields: [cofradiaId], references: [id])
+  tramos      PuestoTramo[]
+  hermanos    PuestoHermano[]
+
+  @@unique([cofradiaId, nombre])
+}
+
+/**
+ * Un puesto puede ocupar varios tramos de una procesión: los Cirios
+ * aparecen en el segundo, en el tercero y en el cuarto, con personas
+ * distintas en cada uno.
+ */
+model PuestoTramo {
+  puestoId Int
+  tramoId  Int
+
+  puesto Puesto @relation(fields: [puestoId], references: [id], onDelete: Cascade)
+  tramo  Tramo  @relation(fields: [tramoId], references: [id], onDelete: Cascade)
+
+  @@id([puestoId, tramoId])
+  @@index([tramoId])
+}
+
+/**
+ * Hermanos que ocupan un puesto, en un tramo concreto.
+ *
+ * Un puesto admite varias personas (los Cirios son unos 17) y el mismo
+ * puesto puede ocupar varios tramos, pero cada persona va en un solo
+ * tramo y en un solo puesto de cada cofradía.
+ *
+ * `cofradiaId` está desnormalizado a propósito. Como `Hermano` cuelga
+ * de la hermandad y no de la cofradía, sin copiar aquí el año no se
+ * podría expresar esa restricción, y dejarla solo en el servicio
+ * permitiría saltársela con una inserción directa.
+ */
+model PuestoHermano {
+  id         Int      @id @default(autoincrement())
+  puestoId   Int
+  hermanoId  Int
+  tramoId    Int
+  cofradiaId Int
+
+  puesto  Puesto  @relation(fields: [puestoId], references: [id], onDelete: Cascade)
+  hermano Hermano @relation(fields: [hermanoId], references: [id], onDelete: Cascade)
+  tramo   Tramo   @relation(fields: [tramoId], references: [id], onDelete: Cascade)
+
+  @@unique([puestoId, hermanoId])
+  // Una persona, un tramo y un puesto por cofradía: los tres a la vez.
+  @@unique([hermanoId, cofradiaId])
+  @@index([cofradiaId])
+  @@index([tramoId])
 }
 
 model Insignia {
@@ -175,6 +227,8 @@ model Tramo {
 
   cofradia    Cofradia  @relation(fields: [cofradiaId], references: [id])
   cortejo     Cortejo   @relation(fields: [cortejoId], references: [id])
+  puestos     PuestoTramo[]
+  hermanos    PuestoHermano[]
   // Aquí más relaciones si luego asignamos cargos o insignias
 }
 
